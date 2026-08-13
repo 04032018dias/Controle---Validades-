@@ -32,6 +32,8 @@ body{background:white!important}main{max-width:none;padding:0}.card{box-shadow:n
 .sector-title{background:#17324d!important;color:white!important;break-after:avoid}
 .card.red{background:#ffe1e1!important}.card.orange{background:#fff0cc!important}.card.green{background:#e4f4e6!important}.card.gray{background:#e7e7e7!important}
 }
+
+#knownProductHint{margin-top:10px;background:#e8f5e9;border-radius:12px;padding:10px}
 </style>
 </head>
 <body>
@@ -42,17 +44,20 @@ body{background:white!important}main{max-width:none;padding:0}.card{box-shadow:n
 </header>
 
 <main>
+<div class="small" style="margin-bottom:6px"><b>Relatório:</b> escolha o setor e a data em que a validade foi realizada.</div>
 <div class="toolbar">
 <button class="primary" id="btnAdd">➕ Cadastrar</button>
 <button id="btnNamePhoto">📸 Foto do nome</button>
 <button id="btnBarcodePhoto">▥ Foto do código</button>
 <button id="btnPdf">📄 Gerar PDF</button>
-<select id="reportSector" style="grid-column:span 2">
+<button id="btnSharePdf">📤 Enviar PDF</button>
+<select id="reportSector">
 <option value="all">PDF: Todos os setores</option>
 <option value="Perecíveis">PDF: Perecíveis</option>
 <option value="Mercearia">PDF: Mercearia</option>
 <option value="Bebidas">PDF: Bebidas</option>
 </select>
+<input id="reportDate" type="date" title="Data do relatório">
 <button id="btnRemoved">📦 Retirados</button>
 <button id="btnBackup">💾 Backup</button>
 <button id="btnRestore">📥 Restaurar</button>
@@ -75,11 +80,27 @@ body{background:white!important}main{max-width:none;padding:0}.card{box-shadow:n
   <div id="expiryAlertList"></div>
 </div>
 
-<div id="scanBox" class="scanbox hidden"><b>📷 Leitura por foto</b><span id="scanText"></span></div>
+<div id="scanBox" class="scanbox hidden"><b>📷 Leitura por foto</b><span id="scanText"></span><div class="actions" style="margin-top:8px"><button id="btnUseScan" class="hidden">✅ Usar dados e cadastrar</button><button id="btnClearScan" class="hidden">🗑️ Limpar leitura</button></div></div>
 <input id="search" class="search" placeholder="Buscar produto ou código...">
 <div id="list"></div>
 </main>
 
+
+<dialog id="scanConfirmDlg">
+<form method="dialog" id="scanConfirmForm">
+<h2>Conferir produto reconhecido</h2>
+<p class="muted">Confira os dados antes de continuar. Você pode corrigir o nome ou o código.</p>
+<label>Nome do produto</label>
+<input id="scanConfirmName" placeholder="Ex.: Predilecta - Molho de Tomate Tradicional">
+<label>Código de barras</label>
+<input id="scanConfirmBarcode" inputmode="numeric" placeholder="Ex.: 7896292333000">
+<div id="knownProductHint" class="notice hidden"></div>
+<div class="actions" style="margin-top:14px">
+<button type="button" id="scanConfirmContinue" class="primary">Continuar cadastro</button>
+<button type="button" id="scanConfirmCancel">Cancelar</button>
+</div>
+</form>
+</dialog>
 <dialog id="dlg"><div class="modal">
 <h2 id="title">Cadastrar produto</h2>
 <input id="editId" type="hidden">
@@ -101,6 +122,8 @@ body{background:white!important}main{max-width:none;padding:0}.card{box-shadow:n
 <option value="Mercearia">Mercearia</option>
 <option value="Bebidas">Bebidas</option>
 </select>
+<label>Data em que a validade foi realizada</label>
+<input id="createdAt" type="date">
 <label>Status</label>
 <select id="status"><option value="active">Ativo</option><option value="removed">Retirado</option></select>
 <div class="notice">Você pode usar Foto do nome e Foto do código separadamente. O lote é opcional e pode ser digitado ou lido por uma foto própria.</div>
@@ -118,12 +141,28 @@ let pendingBarcode='';
 function uid(){return (crypto.randomUUID?crypto.randomUUID():Date.now()+'_'+Math.random().toString(36).slice(2))}
 function save(){localStorage.setItem(STORAGE_KEY,JSON.stringify(products));$('saveState').textContent='✅ Armazenamento pronto';}
 function load(){
- try{products=JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]');if(!Array.isArray(products))products=[]}
- catch(e){products=[]}
+ try{
+   products=JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]');
+   if(!Array.isArray(products))products=[];
+   let changed=false;
+   const hoje=todayISO();
+   products=products.map(p=>{
+     if(!p.createdAt){ changed=true; return {...p,createdAt:hoje}; }
+     return p;
+   });
+   if(changed) localStorage.setItem(STORAGE_KEY,JSON.stringify(products));
+ }catch(e){products=[]}
  $('saveState').textContent='✅ Armazenamento pronto';
 }
 function esc(s){return (s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 function fmt(s){if(!s)return'';const [y,m,d]=s.split('-');return `${d}/${m}/${y}`}
+
+function todayISO(){
+ const n=new Date(), y=n.getFullYear(), m=String(n.getMonth()+1).padStart(2,'0'), d=String(n.getDate()).padStart(2,'0');
+ return `${y}-${m}-${d}`;
+}
+function reportTitleDate(s){ return fmt(s||todayISO()); }
+
 function days(s){const [y,m,d]=s.split('-').map(Number),t=new Date(y,m-1,d),n=new Date();t.setHours(0,0,0,0);n.setHours(0,0,0,0);return Math.round((t-n)/86400000)}
 function inferCategory(name){
  const s=(name||'').toLowerCase();
@@ -136,6 +175,46 @@ function inferCategory(name){
 function finalCategory(x){return x.category&&x.category!=='auto'?x.category:inferCategory(x.name||'')}
 function setScan(t){$('scanText').textContent=t;$('scanBox').classList.remove('hidden')}
 function clearPending(){pendingName='';pendingBarcode=''}
+
+function findNameByBarcode(code){
+ if(!code)return '';
+ const found=products.find(p=>p.barcode===code && (p.name||'').trim());
+ return found?.name||'';
+}
+function updateScanActions(){
+ const has=!!(pendingName||pendingBarcode);
+ $('btnUseScan').classList.toggle('hidden',!has);
+ $('btnClearScan').classList.toggle('hidden',!has);
+}
+function showScanConfirmation(){
+ if(pendingBarcode){
+   const known=findNameByBarcode(pendingBarcode);
+   if(known){
+     pendingName=known;
+     $('knownProductHint').textContent='✅ Este código já foi cadastrado. O nome salvo foi reaproveitado automaticamente.';
+     $('knownProductHint').classList.remove('hidden');
+   }else{
+     $('knownProductHint').classList.add('hidden');
+   }
+ }else{
+   $('knownProductHint').classList.add('hidden');
+ }
+ $('scanConfirmName').value=pendingName||'';
+ $('scanConfirmBarcode').value=pendingBarcode||'';
+ if(!$('scanConfirmDlg').open)$('scanConfirmDlg').showModal();
+}
+function maybeOpenCadastro(){
+ if(pendingBarcode){
+   const known=findNameByBarcode(pendingBarcode);
+   if(known&&!pendingName)pendingName=known;
+ }
+ if(pendingName&&pendingBarcode){
+   setScan(`✅ Nome e código reconhecidos. Confira os dados antes de cadastrar.`);
+   updateScanActions();
+   setTimeout(showScanConfirmation,200);
+ }
+}
+
 
 
 function renderExpiryAlerts(){
@@ -212,7 +291,7 @@ function render(){
    const label=x.status==='removed'?'Retirado':n<0?'Vencido':n===0?'Vence hoje':`${n} dias`;
    out.push(`<div class="card ${cls}" data-sector-card="${sector}"><div class="row"><div>
    <div class="name">${esc(x.name)||'Produto sem nome'}</div>
-   <div class="meta">Código: ${esc(x.barcode)}<br>${x.lot?`Lote: ${esc(x.lot)}<br>`:''}Validade: ${fmt(x.expiry)}<br>Setor: ${sector}</div>
+   <div class="meta">Código: ${esc(x.barcode)}<br>${x.lot?`Lote: ${esc(x.lot)}<br>`:''}Validade: ${fmt(x.expiry)}<br>Validade realizada em: ${fmt(x.createdAt||todayISO())}<br>Setor: ${sector}</div>
    <div class="actions">
    <button onclick="editItem('${x.id}')">Editar</button>
    ${x.status!=='removed'?`<button onclick="removeItem('${x.id}')">Retirar</button>`:''}
@@ -225,38 +304,69 @@ function render(){
 }
 
 function openForm(code='',name=''){
- $('title').textContent='Cadastrar produto';$('editId').value='';$('name').value=name;$('barcode').value=code;$('lot').value='';$('expiry').value='';$('category').value='auto';$('status').value='active';$('dlg').showModal();
+ if(code&&!name)name=findNameByBarcode(code);
+ $('title').textContent='Cadastrar produto';$('editId').value='';$('name').value=name;$('barcode').value=code;$('lot').value='';$('expiry').value='';$('category').value='auto';$('createdAt').value=todayISO();$('status').value='active';$('dlg').showModal();
 }
 function editItem(id){
  const x=products.find(p=>p.id===id);if(!x)return;
- $('title').textContent='Editar produto';$('editId').value=x.id;$('name').value=x.name||'';$('barcode').value=x.barcode||'';$('lot').value=x.lot||'';$('expiry').value=x.expiry||'';$('category').value=x.category||'auto';$('status').value=x.status||'active';$('dlg').showModal();
+ $('title').textContent='Editar produto';$('editId').value=x.id;$('name').value=x.name||'';$('barcode').value=x.barcode||'';$('lot').value=x.lot||'';$('expiry').value=x.expiry||'';$('category').value=x.category||'auto';$('createdAt').value=x.createdAt||todayISO();$('status').value=x.status||'active';$('dlg').showModal();
 }
 function removeItem(id){const x=products.find(p=>p.id===id);if(x){x.status='removed';save();render()}}
 function eraseItem(id){if(confirm('Excluir este produto?')){products=products.filter(p=>p.id!==id);save();render()}}
 
 $('btnSave').onclick=()=>{
  const id=$('editId').value;
- const name=$('name').value.trim(), barcode=$('barcode').value.trim(), lot=$('lot').value.trim(), expiry=$('expiry').value, category=$('category').value, status=$('status').value;
+ const name=$('name').value.trim(), barcode=$('barcode').value.trim(), lot=$('lot').value.trim(), expiry=$('expiry').value, category=$('category').value, createdAt=$('createdAt').value||todayISO(), status=$('status').value;
  if(!barcode||!expiry){alert('Informe pelo menos o código de barras e a validade.');return}
  const dup=products.find(x=>x.barcode===barcode&&x.expiry===expiry&&(x.lot||'')===lot&&x.id!==id);
  if(dup){alert('Esse mesmo código, lote e validade já estão cadastrados.');return}
  if(id){
-  const i=products.findIndex(x=>x.id===id);products[i]={...products[i],name,barcode,lot,expiry,category,status};
- }else products.push({id:uid(),name,barcode,lot,expiry,category,status});
+  const i=products.findIndex(x=>x.id===id);products[i]={...products[i],name,barcode,lot,expiry,category,createdAt,status};
+ }else products.push({id:uid(),name,barcode,lot,expiry,category,status,createdAt});
  save();$('dlg').close();clearPending();render();
 };
 $('btnCancel').onclick=()=>{$('dlg').close()};
 
+
+async function ensureQuagga(){
+ if(window.Quagga)return true;
+ return new Promise(resolve=>{
+   const s=document.createElement('script');
+   s.src='https://cdn.jsdelivr.net/npm/@ericblade/quagga2/dist/quagga.min.js';
+   s.onload=()=>resolve(!!window.Quagga);
+   s.onerror=()=>resolve(false);
+   document.head.appendChild(s);
+ });
+}
+async function barcodeWithQuagga(file){
+ const ok=await ensureQuagga();
+ if(!ok)return '';
+ return new Promise(resolve=>{
+   const url=URL.createObjectURL(file);
+   Quagga.decodeSingle({
+     src:url,
+     numOfWorkers:0,
+     locate:true,
+     inputStream:{size:1200},
+     decoder:{readers:['ean_reader','ean_8_reader','code_128_reader','upc_reader','upc_e_reader']}
+   },result=>{
+     URL.revokeObjectURL(url);
+     resolve(result?.codeResult?.code||'');
+   });
+ });
+}
 async function readBarcode(file){
- if(!('BarcodeDetector' in window))return'';
  try{
-  const formats=await BarcodeDetector.getSupportedFormats();
-  const wanted=['ean_13','ean_8','code_128','upc_a','upc_e'].filter(f=>formats.includes(f));
-  const detector=new BarcodeDetector({formats:wanted.length?wanted:formats});
-  const bitmap=await createImageBitmap(file);
-  const results=await detector.detect(bitmap);
-  return results[0]?.rawValue||'';
- }catch(e){return''}
+   if('BarcodeDetector' in window){
+     const formats=await BarcodeDetector.getSupportedFormats();
+     const wanted=['ean_13','ean_8','code_128','upc_a','upc_e'].filter(f=>formats.includes(f));
+     const detector=new BarcodeDetector({formats:wanted.length?wanted:formats});
+     const bitmap=await createImageBitmap(file);
+     const results=await detector.detect(bitmap);
+     if(results[0]?.rawValue)return results[0].rawValue;
+   }
+ }catch(e){}
+ return await barcodeWithQuagga(file);
 }
 
 async function ensureTesseract(){
@@ -268,18 +378,53 @@ async function ensureTesseract(){
   s.onload=()=>resolve(true);s.onerror=()=>resolve(false);document.head.appendChild(s);
  });
 }
+
 function cleanName(text){
- const bad=/^(validade|val|fab|fabricado|lote|ingredientes|informacao|informação|nutricional|sac|cont[eé]m|alerg|ministerio|ministério|brasil|inspecionado|produto|codigo|código|barra|peso|por[cç][aã]o|conservar|manter|industria|indústria|www\.|http|@)/i;
- const lines=(text||'').split(/\n+/).map(x=>x.replace(/[|*_~]/g,' ').replace(/\s+/g,' ').trim())
- .filter(x=>x.length>=3&&x.length<=45&&/[A-Za-zÀ-ÿ]/.test(x)&&!bad.test(x)&&!/\d{5,}/.test(x));
- return lines[0]||'';
+ const bad=/^(validade|val\.?|fab\.?|fabricado|fabrica[cç][aã]o|lote|lot|ingredientes|informacao|informação|nutricional|sac|cont[eé]m|alerg|ministerio|ministério|brasil|inspecionado|produto|codigo|código|barra|peso|por[cç][aã]o|conservar|manter|industria|indústria|www\.|http|@|registro|servi[cç]o|atendimento|telefone|sif|s\.i\.f)/i;
+ const lines=(text||'').split(/\n+/)
+   .map(x=>x.replace(/[|*_~]/g,' ').replace(/[^\p{L}\p{N}\s\-+&.]/gu,' ').replace(/\s+/g,' ').trim())
+   .filter(x=>x.length>=3&&x.length<=55&&/[A-Za-zÀ-ÿ]/.test(x)&&!bad.test(x)&&!/\d{6,}/.test(x));
+ if(!lines.length)return '';
+ function score(line){
+   let s=0;
+   if(line.length>=4&&line.length<=28)s+=4;
+   if(/^[A-ZÁÉÍÓÚÂÊÔÃÕÇ0-9 \-+&.]+$/.test(line))s+=2;
+   if(/\b(iogurte|leite|queijo|danone|batavo|vigor|frutap|nestl[eé]|yakult|ninho|chamyto|activia|grego|morango|ameixa|baunilha|coco|mel|natural|integral|zero|protein|prote[ií]na)\b/i.test(line))s+=5;
+   if((line.match(/[A-Za-zÀ-ÿ]/g)||[]).length/line.length>.65)s+=2;
+   if(/\b(g|kg|ml|l|kcal|sódio|sodio|carboidrato|proteína|proteina)\b/i.test(line))s-=3;
+   return s;
+ }
+ const ranked=lines.map(line=>({line,s:score(line)})).sort((a,b)=>b.s-a.s);
+ const first=ranked[0]?.line||'';
+ // For packaging fronts, keep a strong brand/title and one useful descriptor when available.
+ const descriptor=lines.find(x=>x!==first && /\b(molho|tomate|tradicional|iogurte|leite|queijo|bebida|biscoito|arroz|feij[aã]o|macarr[aã]o|suco|refrigerante|sabor)\b/i.test(x));
+ if(descriptor && !first.toLowerCase().includes(descriptor.toLowerCase())) return (first+' - '+descriptor).slice(0,70);
+ return first;
+}
+async function preprocessForOCR(file){
+ const img=await createImageBitmap(file);
+ const max=1600, scale=Math.min(1,max/Math.max(img.width,img.height));
+ const c=document.createElement('canvas');
+ c.width=Math.round(img.width*scale);c.height=Math.round(img.height*scale);
+ const ctx=c.getContext('2d',{willReadFrequently:true});
+ ctx.drawImage(img,0,0,c.width,c.height);
+ const im=ctx.getImageData(0,0,c.width,c.height);
+ for(let i=0;i<im.data.length;i+=4){
+   const g=0.299*im.data[i]+0.587*im.data[i+1]+0.114*im.data[i+2];
+   const v=g>155?255:g<85?0:Math.min(255,Math.max(0,(g-128)*1.8+128));
+   im.data[i]=im.data[i+1]=im.data[i+2]=v;
+ }
+ ctx.putImageData(im,0,0);
+ return new Promise(resolve=>c.toBlob(resolve,'image/jpeg',0.92));
 }
 async function readName(file){
  const ok=await ensureTesseract();if(!ok)return'';
  try{
-  setScan('Lendo o nome do produto...');
-  const r=await Tesseract.recognize(file,'por',{logger:m=>{if(m.status==='recognizing text')setScan('Lendo o nome... '+Math.round((m.progress||0)*100)+'%')}});
-  return cleanName(r?.data?.text||'');
+   setScan('Melhorando a foto do nome...');
+   const processed=await preprocessForOCR(file).catch(()=>file);
+   setScan('Lendo o nome do produto...');
+   const r=await Tesseract.recognize(processed||file,'por',{logger:m=>{if(m.status==='recognizing text')setScan('Lendo o nome... '+Math.round((m.progress||0)*100)+'%')}});
+   return cleanName(r?.data?.text||'');
  }catch(e){return''}
 }
 
@@ -310,17 +455,36 @@ $('btnBarcodePhoto').onclick=()=>$('barcodePhotoInput').click();
 $('btnReadNamePhoto').onclick=()=>$('editNamePhotoInput').click();
 $('btnReadLotPhoto').onclick=()=>$('lotPhotoInput').click();
 
+
 $('namePhotoInput').onchange=async e=>{
  const f=e.target.files[0];if(!f)return;
  pendingName=await readName(f);
- setScan(pendingName?`✅ Nome reconhecido: ${pendingName}`:'⚠️ Não consegui reconhecer o nome. Você pode digitar manualmente.');
+ if(pendingName){
+   setScan(`✅ Nome reconhecido: ${pendingName}. Agora fotografe o código ou toque em “Usar dados e cadastrar”.`);
+ }else{
+   setScan('⚠️ Não consegui identificar o nome com segurança. Você pode tirar outra foto ou cadastrar e digitar o nome manualmente.');
+ }
+ updateScanActions();
+ maybeOpenCadastro();
  e.target.value='';
 };
 $('barcodePhotoInput').onchange=async e=>{
  const f=e.target.files[0];if(!f)return;
  setScan('Lendo o código de barras...');
  pendingBarcode=await readBarcode(f);
- setScan(pendingBarcode?`✅ Código reconhecido: ${pendingBarcode}`:'⚠️ Não consegui reconhecer o código. Você pode digitar manualmente.');
+ if(pendingBarcode){
+   const known=findNameByBarcode(pendingBarcode);
+   if(known){
+     pendingName=known;
+     setScan(`✅ Código reconhecido: ${pendingBarcode}. Produto já conhecido: ${known}.`);
+   }else{
+     setScan(`✅ Código reconhecido: ${pendingBarcode}. Agora fotografe o nome ou toque em “Usar dados e cadastrar”.`);
+   }
+ }else{
+   setScan('⚠️ Não consegui ler o código. Tente de novo com o código reto, inteiro e bem iluminado, ou digite manualmente no cadastro.');
+ }
+ updateScanActions();
+ maybeOpenCadastro();
  e.target.value='';
 };
 
@@ -344,7 +508,34 @@ $('editNamePhotoInput').onchange=async e=>{
  e.target.value='';
 };
 
+
+$('btnUseScan').onclick=()=>showScanConfirmation();
+$('btnClearScan').onclick=()=>{
+ clearPending();
+ $('scanBox').classList.add('hidden');
+ updateScanActions();
+};
+
+$('scanConfirmContinue').onclick=()=>{
+ pendingName=$('scanConfirmName').value.trim();
+ pendingBarcode=$('scanConfirmBarcode').value.trim();
+ if(!pendingName&&!pendingBarcode){alert('Informe pelo menos o nome ou o código.');return}
+ $('scanConfirmDlg').close();
+ openForm(pendingBarcode,pendingName);
+};
+$('scanConfirmCancel').onclick=()=>$('scanConfirmDlg').close();
+$('scanConfirmBarcode').oninput=()=>{
+ const code=$('scanConfirmBarcode').value.trim();
+ const known=findNameByBarcode(code);
+ if(known){
+   $('scanConfirmName').value=known;
+   $('knownProductHint').textContent='✅ Código já conhecido. Nome recuperado da sua base: '+known;
+   $('knownProductHint').classList.remove('hidden');
+ }else $('knownProductHint').classList.add('hidden');
+};
 $('btnAdd').onclick=()=>{openForm(pendingBarcode,pendingName)};
+
+
 $('search').oninput=render;
 $('btnRemoved').onclick=()=>{showRemoved=!showRemoved;$('btnRemoved').textContent=showRemoved?'⬅️ Voltar aos ativos':'📦 Retirados';render()};
 
@@ -363,17 +554,151 @@ $('restoreInput').onchange=async e=>{
  e.target.value='';
 };
 
-$('btnPdf').onclick=()=>{
+
+function reportItems(){
+ const date=$('reportDate').value||todayISO();
  const sector=$('reportSector').value;
- document.querySelectorAll('[data-sector-title],[data-sector-card]').forEach(el=>el.classList.remove('hidden'));
- if(sector!=='all'){
-  document.querySelectorAll('[data-sector-title]').forEach(el=>{if(el.dataset.sectorTitle!==sector)el.classList.add('hidden')});
-  document.querySelectorAll('[data-sector-card]').forEach(el=>{if(el.dataset.sectorCard!==sector)el.classList.add('hidden')});
+ return products
+   .filter(x=>x.status!=='removed')
+   .filter(x=>(x.createdAt||todayISO())===date)
+   .filter(x=>sector==='all'||finalCategory(x)===sector)
+   .sort((a,b)=>(a.expiry||'').localeCompare(b.expiry||''));
+}
+
+function openPrintReport(){
+ const date=$('reportDate').value||todayISO();
+ const sector=$('reportSector').value;
+ const items=reportItems();
+ if(!items.length){
+   alert('Não há validades cadastradas para essa data e setor.');
+   return;
  }
- window.print();
- setTimeout(()=>document.querySelectorAll('[data-sector-title],[data-sector-card]').forEach(el=>el.classList.remove('hidden')),500);
+ const title=`Validades feitas no dia ${reportTitleDate(date)}`;
+ const sectorLabel=sector==='all'?'Todos os setores':sector;
+ const groups=['Perecíveis','Mercearia','Bebidas'];
+
+ const body=groups.map(g=>{
+   const arr=items.filter(x=>finalCategory(x)===g);
+   if(!arr.length)return '';
+   return `<h2>${g}</h2>`+arr.map(x=>{
+     const n=days(x.expiry);
+     const bg=n<=15?'#ffe1e1':n<=30?'#fff0cc':'#e4f4e6';
+     return `<div class="r" style="background:${bg}">
+       <b>${esc(x.name)||'Produto sem nome'}</b><br>
+       Código: ${esc(x.barcode)}<br>
+       ${x.lot?`Lote: ${esc(x.lot)}<br>`:''}
+       Validade: ${fmt(x.expiry)}<br>
+       Lançado em: ${fmt(x.createdAt||date)}
+     </div>`;
+   }).join('');
+ }).join('');
+
+ const w=window.open('','_blank');
+ if(!w){ alert('O navegador bloqueou a janela do PDF. Permita pop-ups e tente novamente.'); return; }
+ w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
+ <style>
+ body{font-family:Arial,sans-serif;padding:22px;color:#1f2937}
+ h1{font-size:22px;margin:0 0 4px}p{margin:0 0 18px;color:#475467}
+ h2{font-size:18px;background:#17324d;color:white;padding:8px 10px;border-radius:8px}
+ .r{border:1px solid #bbb;border-radius:8px;padding:10px;margin:8px 0;break-inside:avoid;line-height:1.45}
+ @media print{*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}}
+ </style></head><body><h1>${title}</h1><p>${sectorLabel} • ${items.length} produto(s)</p>${body}
+ <script>setTimeout(()=>window.print(),250)<\/script></body></html>`);
+ w.document.close();
+}
+
+async function ensureJsPdf(){
+ if(window.jspdf?.jsPDF)return true;
+ return new Promise(resolve=>{
+   const s=document.createElement('script');
+   s.src='https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js';
+   s.onload=()=>resolve(!!window.jspdf?.jsPDF);
+   s.onerror=()=>resolve(false);
+   document.head.appendChild(s);
+ });
+}
+
+async function buildPdfFile(){
+ const items=reportItems();
+ if(!items.length) throw new Error('EMPTY');
+ const ok=await ensureJsPdf();
+ if(!ok) throw new Error('PDFLIB');
+ const {jsPDF}=window.jspdf;
+ const doc=new jsPDF({unit:'mm',format:'a4'});
+ const date=$('reportDate').value||todayISO();
+ const sector=$('reportSector').value;
+ const title=`Validades feitas no dia ${reportTitleDate(date)}`;
+ const sectorLabel=sector==='all'?'Todos os setores':sector;
+
+ let y=16;
+ doc.setFont('helvetica','bold');doc.setFontSize(16);doc.text(title,14,y);
+ y+=7;doc.setFont('helvetica','normal');doc.setFontSize(10);
+ doc.text(`${sectorLabel} - ${items.length} produto(s)`,14,y);y+=8;
+
+ const groups=['Perecíveis','Mercearia','Bebidas'];
+ for(const g of groups){
+   const arr=items.filter(x=>finalCategory(x)===g);
+   if(!arr.length)continue;
+   if(y>268){doc.addPage();y=16}
+   doc.setFillColor(23,50,77);doc.roundedRect(14,y-5,182,8,2,2,'F');
+   doc.setTextColor(255,255,255);doc.setFont('helvetica','bold');doc.setFontSize(11);doc.text(g.toUpperCase(),18,y);
+   doc.setTextColor(31,41,55);y+=8;
+
+   for(const x of arr){
+     const n=days(x.expiry);
+     if(y>256){doc.addPage();y=16}
+     if(n<=15)doc.setFillColor(255,225,225);
+     else if(n<=30)doc.setFillColor(255,240,204);
+     else doc.setFillColor(228,244,230);
+     const h=x.lot?29:24;
+     doc.roundedRect(14,y-4,182,h,2,2,'F');
+     doc.setFont('helvetica','bold');doc.setFontSize(11);
+     doc.text((x.name||'Produto sem nome').slice(0,70),18,y+2);
+     doc.setFont('helvetica','normal');doc.setFontSize(9);
+     let yy=y+8;
+     doc.text(`Código: ${x.barcode||''}`,18,yy); yy+=5;
+     if(x.lot){doc.text(`Lote: ${x.lot}`,18,yy);yy+=5}
+     doc.text(`Validade: ${fmt(x.expiry)}`,18,yy);yy+=5;
+     doc.text(`Validade realizada em: ${fmt(x.createdAt||date)}`,18,yy);
+     y+=h+4;
+   }
+ }
+ const blob=doc.output('blob');
+ const filename=`validades_${date.replaceAll('-','_')}.pdf`;
+ return new File([blob],filename,{type:'application/pdf'});
+}
+
+$('btnPdf').onclick=openPrintReport;
+
+$('btnSharePdf').onclick=async()=>{
+ try{
+   const file=await buildPdfFile();
+   const date=$('reportDate').value||todayISO();
+   const shareData={
+     title:`Validades feitas no dia ${reportTitleDate(date)}`,
+     text:`Segue o relatório de validades feitas no dia ${reportTitleDate(date)}.`,
+     files:[file]
+   };
+   if(navigator.canShare && navigator.canShare({files:[file]}) && navigator.share){
+     await navigator.share(shareData);
+   }else{
+     const a=document.createElement('a');
+     a.href=URL.createObjectURL(file);
+     a.download=file.name;
+     a.click();
+     setTimeout(()=>URL.revokeObjectURL(a.href),1500);
+     alert('O PDF foi baixado. Agora anexe o arquivo no WhatsApp ou no e-mail.');
+   }
+ }catch(e){
+   if(e?.name==='AbortError')return;
+   if(e?.message==='EMPTY') alert('Não há validades cadastradas para essa data e setor.');
+   else if(e?.message==='PDFLIB') alert('Não consegui carregar o gerador de PDF. Verifique sua internet e tente novamente.');
+   else {console.error(e);alert('Não consegui gerar o PDF para compartilhamento.');}
+ }
 };
 
+
+$('reportDate').value=todayISO();
 load();
 render();
 setTimeout(showStartupAlertOnce,300);
