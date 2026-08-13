@@ -26,7 +26,8 @@ dialog{border:0;border-radius:16px;width:calc(100% - 24px);max-width:520px;paddi
 <main>
 <div class="toolbar">
 <button class="primary" id="btnAdd">➕ Cadastrar</button>
-<button id="btnPhoto">📸 Usar 2 fotos</button>
+<button id="btnNamePhoto">📸 Foto do nome</button>
+<button id="btnBarcodePhoto">▥ Foto do código</button>
 <button id="btnPdf">📄 Gerar PDF</button>
 <select id="reportSector" style="grid-column:span 2"><option value="all">PDF: Todos os setores</option><option value="Perecíveis">PDF: Perecíveis</option><option value="Mercearia">PDF: Mercearia</option><option value="Bebidas">PDF: Bebidas</option></select>
 <button id="btnRemoved">📦 Retirados</button>
@@ -38,7 +39,7 @@ dialog{border:0;border-radius:16px;width:calc(100% - 24px);max-width:520px;paddi
 <input id="editNamePhotoInput" class="hidden" type="file" accept="image/*" capture="environment">
 <input id="restoreInput" class="hidden" type="file" accept="application/json,.json">
 <div class="stats"><div class="stat"><b id="sTotal">0</b><span class="small">Ativos</span></div><div class="stat"><b id="sRed">0</b><span class="small">Até 15 dias</span></div><div class="stat"><b id="sOrange">0</b><span class="small">16 a 30 dias</span></div><div class="stat"><b id="sGreen">0</b><span class="small">Acima de 30 dias</span></div></div>
-<div id="scanBox" class="scanbox hidden"><b>📷 Cadastro por 2 fotos</b><span id="scanText">Primeiro fotografe o nome; depois o código de barras.</span></div><input id="search" class="search" placeholder="Buscar produto ou código...">
+<div id="scanBox" class="scanbox hidden"><b>📷 Leitura por foto</b><span id="scanText">Use “Foto do nome” e “Foto do código” separadamente, na ordem que preferir.</span></div><input id="search" class="search" placeholder="Buscar produto ou código...">
 <div id="list"></div>
 </main>
 
@@ -51,11 +52,27 @@ dialog{border:0;border-radius:16px;width:calc(100% - 24px);max-width:520px;paddi
 <label>Data de validade</label><input id="expiry" type="date">
 <label>Categoria / setor</label><select id="category"><option value="auto">Automático pelo nome</option><option value="Perecíveis">Perecíveis</option><option value="Mercearia">Mercearia</option><option value="Bebidas">Bebidas</option></select>
 <label>Status</label><select id="status"><option value="active">Ativo</option><option value="removed">Retirado</option></select>
-<div class="notice">Você pode tirar 2 fotos para novos produtos. Nos produtos já cadastrados, abra Editar e use “📸 Ler nome pela foto” para atualizar somente o nome. O app também classifica automaticamente em Perecíveis, Mercearia ou Bebidas, e você pode corrigir a categoria manualmente.</div>
+<div class="notice">Para novos produtos, use os botões separados “Foto do nome” e “Foto do código”. Nos produtos já cadastrados, abra Editar e use “📸 Ler nome pela foto” para atualizar somente o nome. O app também classifica automaticamente em Perecíveis, Mercearia ou Bebidas, e você pode corrigir a categoria manualmente.</div>
 <div class="actions"><button class="primary" id="btnSave">Salvar</button><button id="btnCancel">Cancelar</button></div>
 </div></dialog>
 
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js">
+async function initApp(){
+ try{
+   $('saveState').textContent='Preparando armazenamento...';
+   const db=await openDB();
+   if(db) try{db.close()}catch(e){}
+   $('saveState').textContent='✅ Armazenamento pronto';
+   await render();
+ }catch(e){
+   console.error(e);
+   $('saveState').textContent='⚠️ Erro no armazenamento';
+   alert('Não consegui abrir o armazenamento local. Feche outras abas do app e abra novamente. Seus dados não foram apagados.');
+ }
+}
+
+initApp();
+</script>
 <script>
 const STARTER=[{"expiry": "2026-08-18", "barcode": "7896691101002", "name": ""}, {"expiry": "2026-08-23", "barcode": "7891025109907", "name": ""}, {"expiry": "2026-08-28", "barcode": "7896862002060", "name": ""}, {"expiry": "2026-08-29", "barcode": "7898460935979", "name": ""}, {"expiry": "2026-08-31", "barcode": "7896625212514", "name": ""}, {"expiry": "2026-09-01", "barcode": "7891000110430", "name": ""}, {"expiry": "2026-09-05", "barcode": "7896691101535", "name": ""}, {"expiry": "2026-09-05", "barcode": "7891000261026", "name": ""}, {"expiry": "2026-09-07", "barcode": "7891097089527", "name": ""}, {"expiry": "2026-09-07", "barcode": "7896625210466", "name": ""}, {"expiry": "2026-09-07", "barcode": "7896625210473", "name": ""}, {"expiry": "2026-09-10", "barcode": "7896862002732", "name": ""}, {"expiry": "2026-09-10", "barcode": "7891025119524", "name": ""}, {"expiry": "2026-09-10", "barcode": "7891025110938", "name": ""}, {"expiry": "2026-09-12", "barcode": "7891097087431", "name": ""}, {"expiry": "2026-09-12", "barcode": "7898460935993", "name": ""}, {"expiry": "2026-09-12", "barcode": "7891000360668", "name": ""}, {"expiry": "2026-09-14", "barcode": "7891025106067", "name": ""}, {"expiry": "2026-09-15", "barcode": "7891025125495", "name": ""}, {"expiry": "2026-09-18", "barcode": "7891097087448", "name": ""}, {"expiry": "2026-09-18", "barcode": "7891000360323", "name": ""}, {"expiry": "2026-09-22", "barcode": "7891025125488", "name": ""}, {"expiry": "2026-09-23", "barcode": "7891000103931", "name": ""}, {"expiry": "2026-09-24", "barcode": "7891025121640", "name": ""}, {"expiry": "2026-09-25", "barcode": "7891000252833", "name": ""}, {"expiry": "2026-09-27", "barcode": "7891097087455", "name": ""}, {"expiry": "2026-09-29", "barcode": "7891000244265", "name": ""}];
 const DB_NAME='controleValidadesDB';
@@ -84,8 +101,18 @@ function finalCategory(x){
 
 function openDB(){
  return new Promise((resolve,reject)=>{
-   const req=indexedDB.open(DB_NAME,1);
-   req.onupgradeneeded=e=>{const d=e.target.result;if(!d.objectStoreNames.contains(STORE))d.createObjectStore(STORE,{keyPath:'id'})};
+   try{
+     const req=indexedDB.open('validadeDB',1);
+     req.onupgradeneeded=()=>{
+       const db=req.result;
+       if(!db.objectStoreNames.contains('products')) db.createObjectStore('products',{keyPath:'id'});
+     };
+     req.onsuccess=()=>resolve(req.result);
+     req.onerror=()=>reject(req.error||new Error('Falha ao abrir armazenamento'));
+     req.onblocked=()=>reject(new Error('Armazenamento bloqueado. Feche outras abas do app e tente novamente.'));
+   }catch(e){reject(e)}
+ });
+})};
    req.onsuccess=e=>resolve(e.target.result);
    req.onerror=e=>reject(e.target.error);
  });
@@ -250,20 +277,27 @@ async function processBarcodePhoto(file){
  return '';
 }
 
+
+let pendingNamePhoto='';
+let pendingBarcodePhoto='';
+
 $('namePhotoInput').onchange=async e=>{
  const f=e.target.files[0];
  if(!f)return;
  try{
    pendingNamePhoto=await processNamePhoto(f);
+   if(pendingNamePhoto){
+     setScanStatus('✅ Nome reconhecido. Agora você pode tirar a foto do código ou cadastrar manualmente.');
+   }
  }catch(err){
    console.error(err);
    pendingNamePhoto='';
    setScanStatus('Não consegui analisar a foto do nome.');
  }
  e.target.value='';
- // Depois da foto do nome, abre automaticamente a câmera para o código.
- setTimeout(()=>$('barcodePhotoInput').click(),350);
 };
+
+
 
 $('barcodePhotoInput').onchange=async e=>{
  const f=e.target.files[0];
@@ -275,26 +309,23 @@ $('barcodePhotoInput').onchange=async e=>{
    console.error(err);
    setScanStatus('Não consegui analisar a foto do código.');
  }
+ pendingBarcodePhoto=code||'';
  const d=await allProducts();
  const known=code?d.find(p=>p.barcode===code && (p.name||'').trim()):null;
  const finalName=known?.name||pendingNamePhoto||'';
 
  if(code && finalName){
-   setScanStatus('✅ Nome e código preenchidos. Agora informe a validade.');
-   openForm(code,finalName);
+   setScanStatus('✅ Nome e código disponíveis. Toque em Cadastrar para informar a validade.');
  }else if(code){
-   setScanStatus('✅ Código preenchido. Informe o nome e a validade.');
-   openForm(code,'');
+   setScanStatus('✅ Código reconhecido. Você pode tirar a foto do nome ou tocar em Cadastrar.');
  }else if(finalName){
-   setScanStatus('Nome preenchido. Digite o código e informe a validade.');
-   openForm('',finalName);
+   setScanStatus('Nome reconhecido. Você pode tentar novamente a foto do código ou tocar em Cadastrar.');
  }else{
-   setScanStatus('Preencha os dados manualmente.');
-   openForm();
+   setScanStatus('Não consegui reconhecer o código.');
  }
- pendingNamePhoto=null;
  e.target.value='';
 };
+
 
 
 
@@ -337,7 +368,7 @@ function preparePrint(){
  setTimeout(()=>document.querySelectorAll('[data-sector], [data-sector-empty], [data-sector-card]').forEach(el=>el.classList.remove('hidden')),500);
 }
 
-$('btnAdd').onclick=()=>openForm();$('btnPhoto').onclick=()=>{$('namePhotoInput').click()};$('btnPdf').onclick=preparePrint;$('btnRemoved').onclick=()=>{showRemoved=!showRemoved;render()};$('btnBackup').onclick=backup;$('btnRestore').onclick=()=>$('restoreInput').click();$('btnSave').onclick=saveForm;$('btnCancel').onclick=()=>$('dlg').close();$('search').oninput=render;
+$('btnAdd').onclick=()=>{openForm(pendingBarcodePhoto||'',pendingNamePhoto||'');pendingNamePhoto='';pendingBarcodePhoto='';};$('btnNamePhoto').onclick=()=>{$('namePhotoInput').click()};$('btnBarcodePhoto').onclick=()=>{$('barcodePhotoInput').click()};$('btnPdf').onclick=preparePrint;$('btnRemoved').onclick=()=>{showRemoved=!showRemoved;render()};$('btnBackup').onclick=backup;$('btnRestore').onclick=()=>$('restoreInput').click();$('btnSave').onclick=saveForm;$('btnCancel').onclick=()=>$('dlg').close();$('search').oninput=render;
 
 (async()=>{
  try{db=await openDB();await seedIfNeeded();setState('✅ Armazenamento pronto');await render();if('serviceWorker' in navigator && location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js').catch(()=>{})}catch(e){setState('❌ Abra pelo Chrome em um link online');alert('Esta versão precisa ser aberta no Chrome em um endereço online para salvar com segurança.')} 
