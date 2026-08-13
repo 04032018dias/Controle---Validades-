@@ -22,7 +22,8 @@ dialog{border:0;border-radius:16px;width:calc(100% - 24px);max-width:520px;paddi
 </style>
 </head>
 <body>
-<header><h1>Controle de Validades</h1><p>🔴 até 15 dias • 🟠 16 a 30 dias • 🟢 acima de 30 dias</p><div id="saveState">Preparando armazenamento…</div></header>
+<header><h1>Controle de Validades</h1><p>🔴 até 15 dias • 🟠 16 a 30 dias • 🟢 acima de 30 dias</p><div id="saveState">Preparando armazenamento…</div>
+<div style="font-size:14px;opacity:.9;margin-top:4px">🆕 Base nova: cadastros começam do zero</div></header>
 <main>
 <div class="toolbar">
 <button class="primary" id="btnAdd">➕ Cadastrar</button>
@@ -59,7 +60,7 @@ dialog{border:0;border-radius:16px;width:calc(100% - 24px);max-width:520px;paddi
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js">
 async function initApp(){
  try{
-   $('saveState').textContent='Preparando armazenamento...';
+   $('saveState').textContent='Iniciando armazenamento novo...';
    const db=await openDB();
    if(db) try{db.close()}catch(e){}
    $('saveState').textContent='✅ Armazenamento pronto';
@@ -70,6 +71,7 @@ async function initApp(){
    alert('Não consegui abrir o armazenamento local. Feche outras abas do app e abra novamente. Seus dados não foram apagados.');
  }
 }
+
 
 initApp();
 </script>
@@ -102,7 +104,7 @@ function finalCategory(x){
 function openDB(){
  return new Promise((resolve,reject)=>{
    try{
-     const req=indexedDB.open('validadeDB',1);
+     const req=indexedDB.open('validadeDB_novo_20260813',1);
      req.onupgradeneeded=()=>{
        const db=req.result;
        if(!db.objectStoreNames.contains('products')) db.createObjectStore('products',{keyPath:'id'});
