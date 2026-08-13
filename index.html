@@ -4,377 +4,379 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#17324d">
-<link rel="manifest" href="manifest.webmanifest">
 <title>Controle de Validades</title>
 <style>
 :root{--bg:#f4f6f8;--ink:#1f2937;--blue:#17324d;--red:#ffe1e1;--orange:#fff0cc;--green:#e4f4e6;--gray:#e7e7e7;--muted:#667085}
 *{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--ink)}
-header{background:var(--blue);color:white;padding:15px;position:sticky;top:0;z-index:2}header h1{margin:0;font-size:20px}header p{margin:3px 0 0;font-size:12px;opacity:.85}
-main{max-width:920px;margin:auto;padding:12px}.toolbar{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:12px}
-button{border:0;border-radius:12px;padding:12px;font-weight:750;background:white;box-shadow:0 1px 4px #0002}button.primary{background:var(--blue);color:white}
-.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}.stat{background:#fff;border-radius:12px;padding:10px;text-align:center;box-shadow:0 1px 4px #0001}.stat b{display:block;font-size:21px}.small{font-size:12px;color:var(--muted)}
-.search{width:100%;padding:12px;border:1px solid #ccd3dd;border-radius:10px;margin-bottom:12px;font-size:16px}.card{border-radius:14px;padding:12px;margin-bottom:10px;box-shadow:0 1px 5px #0001}.red{background:var(--red)}.orange{background:var(--orange)}.green{background:var(--green)}.gray{background:var(--gray)}
-.row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center}.name{font-weight:800}.meta{font-size:13px;margin-top:3px}.badge{font-size:12px;font-weight:800;padding:6px 8px;background:#fff8;border-radius:999px;white-space:nowrap}.actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}.actions button{padding:8px 9px;font-size:12px}
-dialog{border:0;border-radius:16px;width:calc(100% - 24px);max-width:520px;padding:0}dialog::backdrop{background:#0008}.modal{padding:16px}label{display:block;font-size:13px;font-weight:750;margin:11px 0 5px}input,select{width:100%;padding:11px;border:1px solid #cbd5e1;border-radius:10px;font-size:16px}
-.notice{background:#fff7d6;padding:10px;border-radius:10px;font-size:13px;margin:10px 0}.hidden{display:none!important}#saveState{font-size:12px;margin-top:5px;opacity:.9}.sector-title{font-size:22px;font-weight:900;margin:22px 0 10px;padding:10px 12px;border-radius:12px;background:#17324d;color:#fff;letter-spacing:.3px}.sector-empty{font-size:13px;color:var(--muted);margin:0 0 12px}.scanbox{background:#eef5ff;border:1px solid #c7daf5;border-radius:12px;padding:10px;margin-bottom:12px;font-size:13px}.scanbox b{display:block;margin-bottom:3px}
-@media(min-width:700px){.toolbar{grid-template-columns:repeat(6,1fr)}}
-@media print{*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important}header,.toolbar,.search,.actions,dialog{display:none!important}body{background:#fff!important}main{max-width:none;padding:0}.card,.stat{box-shadow:none;border:1px solid #bbb;break-inside:avoid}.sector-title{background:#17324d!important;color:#fff!important;break-after:avoid}.card.red{background:#ffe1e1!important}.card.orange{background:#fff0cc!important}.card.green{background:#e4f4e6!important}.card.gray{background:#e7e7e7!important}}
+header{background:var(--blue);color:white;padding:15px;position:sticky;top:0;z-index:2}
+header h1{margin:0;font-size:22px}header p{margin:4px 0 0;font-size:14px}.ready{font-size:13px;margin-top:6px}
+main{max-width:920px;margin:auto;padding:12px}
+.toolbar{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+button{border:0;border-radius:12px;padding:13px;font-weight:800;background:white;box-shadow:0 1px 5px #0002;font-size:15px}
+button.primary{background:var(--blue);color:#fff}
+select,input{width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:10px;font-size:16px;background:white}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0}
+.stat{background:#fff;border-radius:12px;padding:12px 8px;text-align:center;box-shadow:0 1px 4px #0001}.stat b{display:block;font-size:22px}.small{font-size:12px;color:var(--muted)}
+.search{margin-bottom:12px}.card{border-radius:14px;padding:12px;margin-bottom:10px;box-shadow:0 1px 5px #0001}.red{background:var(--red)}.orange{background:var(--orange)}.green{background:var(--green)}.gray{background:var(--gray)}
+.row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:start}.name{font-weight:900;font-size:18px}.meta{font-size:13px;line-height:1.45;margin-top:3px}.badge{font-size:12px;font-weight:800;padding:6px 8px;background:#fff9;border-radius:999px;white-space:nowrap}
+.actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}.actions button{padding:8px 10px;font-size:12px}
+.sector-title{font-size:21px;font-weight:900;margin:22px 0 10px;padding:10px 12px;border-radius:12px;background:#17324d;color:#fff}
+.scanbox{background:#eef5ff;border:1px solid #c7daf5;border-radius:12px;padding:10px;margin-bottom:12px;font-size:13px}.alertbox{background:#fff3cd;border:2px solid #f59e0b;border-radius:14px;padding:12px;margin-bottom:12px}.alertbox h3{margin:0 0 8px;font-size:17px}.alertitem{background:#fff;border-radius:10px;padding:9px;margin:6px 0;border-left:5px solid #f59e0b}.alertitem.urgent{border-left-color:#dc2626;background:#fff0f0}.alertitem b{display:block}.alertcount{font-weight:900}.scanbox b{display:block;margin-bottom:4px}.hidden{display:none!important}
+dialog{border:0;border-radius:16px;width:calc(100% - 24px);max-width:520px;padding:0}dialog::backdrop{background:#0008}.modal{padding:16px}
+label{display:block;font-size:13px;font-weight:800;margin:11px 0 5px}.notice{background:#fff7d6;padding:10px;border-radius:10px;font-size:13px;margin:10px 0}
+@media(min-width:700px){.toolbar{grid-template-columns:repeat(4,1fr)}}
+@media print{
+*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+header,.toolbar,.stats,.search,.actions,.scanbox,.alertbox,dialog{display:none!important}
+body{background:white!important}main{max-width:none;padding:0}.card{box-shadow:none;border:1px solid #bbb;break-inside:avoid}
+.sector-title{background:#17324d!important;color:white!important;break-after:avoid}
+.card.red{background:#ffe1e1!important}.card.orange{background:#fff0cc!important}.card.green{background:#e4f4e6!important}.card.gray{background:#e7e7e7!important}
+}
 </style>
 </head>
 <body>
-<header><h1>Controle de Validades</h1><p>🔴 até 15 dias • 🟠 16 a 30 dias • 🟢 acima de 30 dias</p><div id="saveState">Preparando armazenamento…</div>
-<div style="font-size:14px;opacity:.9;margin-top:4px">🆕 Base nova: cadastros começam do zero</div></header>
+<header>
+<h1>Controle de Validades</h1>
+<p>🔴 até 15 dias • 🟠 16 a 30 dias • 🟢 acima de 30 dias</p>
+<div class="ready" id="saveState">✅ Armazenamento pronto</div>
+</header>
+
 <main>
 <div class="toolbar">
 <button class="primary" id="btnAdd">➕ Cadastrar</button>
 <button id="btnNamePhoto">📸 Foto do nome</button>
 <button id="btnBarcodePhoto">▥ Foto do código</button>
 <button id="btnPdf">📄 Gerar PDF</button>
-<select id="reportSector" style="grid-column:span 2"><option value="all">PDF: Todos os setores</option><option value="Perecíveis">PDF: Perecíveis</option><option value="Mercearia">PDF: Mercearia</option><option value="Bebidas">PDF: Bebidas</option></select>
+<select id="reportSector" style="grid-column:span 2">
+<option value="all">PDF: Todos os setores</option>
+<option value="Perecíveis">PDF: Perecíveis</option>
+<option value="Mercearia">PDF: Mercearia</option>
+<option value="Bebidas">PDF: Bebidas</option>
+</select>
 <button id="btnRemoved">📦 Retirados</button>
 <button id="btnBackup">💾 Backup</button>
 <button id="btnRestore">📥 Restaurar</button>
 </div>
+
 <input id="namePhotoInput" class="hidden" type="file" accept="image/*" capture="environment">
 <input id="barcodePhotoInput" class="hidden" type="file" accept="image/*" capture="environment">
 <input id="editNamePhotoInput" class="hidden" type="file" accept="image/*" capture="environment">
 <input id="restoreInput" class="hidden" type="file" accept="application/json,.json">
-<div class="stats"><div class="stat"><b id="sTotal">0</b><span class="small">Ativos</span></div><div class="stat"><b id="sRed">0</b><span class="small">Até 15 dias</span></div><div class="stat"><b id="sOrange">0</b><span class="small">16 a 30 dias</span></div><div class="stat"><b id="sGreen">0</b><span class="small">Acima de 30 dias</span></div></div>
-<div id="scanBox" class="scanbox hidden"><b>📷 Leitura por foto</b><span id="scanText">Use “Foto do nome” e “Foto do código” separadamente, na ordem que preferir.</span></div><input id="search" class="search" placeholder="Buscar produto ou código...">
+
+<div class="stats">
+<div class="stat"><b id="sTotal">0</b><span class="small">Ativos</span></div>
+<div class="stat"><b id="sRed">0</b><span class="small">Até 15 dias</span></div>
+<div class="stat"><b id="sOrange">0</b><span class="small">16 a 30 dias</span></div>
+<div class="stat"><b id="sGreen">0</b><span class="small">Acima de 30 dias</span></div>
+</div>
+
+<div id="expiryAlerts" class="alertbox hidden">
+  <h3>⚠️ Alertas de retirada</h3>
+  <div id="expiryAlertList"></div>
+</div>
+
+<div id="scanBox" class="scanbox hidden"><b>📷 Leitura por foto</b><span id="scanText"></span></div>
+<input id="search" class="search" placeholder="Buscar produto ou código...">
 <div id="list"></div>
 </main>
 
 <dialog id="dlg"><div class="modal">
 <h2 id="title">Cadastrar produto</h2>
 <input id="editId" type="hidden">
-<label>Nome do produto</label><input id="name" placeholder="Ex.: Iogurte morango">
+<label>Nome do produto</label>
+<input id="name" placeholder="Ex.: Iogurte morango">
 <button type="button" id="btnReadNamePhoto" style="margin-top:8px;width:100%">📸 Ler nome pela foto</button>
-<label>Código de barras</label><input id="barcode" inputmode="numeric" placeholder="789...">
-<label>Data de validade</label><input id="expiry" type="date">
-<label>Categoria / setor</label><select id="category"><option value="auto">Automático pelo nome</option><option value="Perecíveis">Perecíveis</option><option value="Mercearia">Mercearia</option><option value="Bebidas">Bebidas</option></select>
-<label>Status</label><select id="status"><option value="active">Ativo</option><option value="removed">Retirado</option></select>
-<div class="notice">Para novos produtos, use os botões separados “Foto do nome” e “Foto do código”. Nos produtos já cadastrados, abra Editar e use “📸 Ler nome pela foto” para atualizar somente o nome. O app também classifica automaticamente em Perecíveis, Mercearia ou Bebidas, e você pode corrigir a categoria manualmente.</div>
+<label>Código de barras</label>
+<input id="barcode" inputmode="numeric" placeholder="789...">
+<label>Lote <span style="font-weight:400">(opcional)</span></label>
+<input id="lot" placeholder="Ex.: L1234, A25B, 2408...">
+<button type="button" id="btnReadLotPhoto" style="margin-top:8px;width:100%">📸 Ler lote pela foto</button>
+<input id="lotPhotoInput" class="hidden" type="file" accept="image/*" capture="environment">
+<label>Data de validade</label>
+<input id="expiry" type="date">
+<label>Categoria / setor</label>
+<select id="category">
+<option value="auto">Automático pelo nome</option>
+<option value="Perecíveis">Perecíveis</option>
+<option value="Mercearia">Mercearia</option>
+<option value="Bebidas">Bebidas</option>
+</select>
+<label>Status</label>
+<select id="status"><option value="active">Ativo</option><option value="removed">Retirado</option></select>
+<div class="notice">Você pode usar Foto do nome e Foto do código separadamente. O lote é opcional e pode ser digitado ou lido por uma foto própria.</div>
 <div class="actions"><button class="primary" id="btnSave">Salvar</button><button id="btnCancel">Cancelar</button></div>
 </div></dialog>
 
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js">
-async function initApp(){
- try{
-   $('saveState').textContent='Iniciando armazenamento novo...';
-   const db=await openDB();
-   if(db) try{db.close()}catch(e){}
-   $('saveState').textContent='✅ Armazenamento pronto';
-   await render();
- }catch(e){
-   console.error(e);
-   $('saveState').textContent='⚠️ Erro no armazenamento';
-   alert('Não consegui abrir o armazenamento local. Feche outras abas do app e abra novamente. Seus dados não foram apagados.');
- }
-}
-
-
-initApp();
-</script>
 <script>
-const STARTER=[{"expiry": "2026-08-18", "barcode": "7896691101002", "name": ""}, {"expiry": "2026-08-23", "barcode": "7891025109907", "name": ""}, {"expiry": "2026-08-28", "barcode": "7896862002060", "name": ""}, {"expiry": "2026-08-29", "barcode": "7898460935979", "name": ""}, {"expiry": "2026-08-31", "barcode": "7896625212514", "name": ""}, {"expiry": "2026-09-01", "barcode": "7891000110430", "name": ""}, {"expiry": "2026-09-05", "barcode": "7896691101535", "name": ""}, {"expiry": "2026-09-05", "barcode": "7891000261026", "name": ""}, {"expiry": "2026-09-07", "barcode": "7891097089527", "name": ""}, {"expiry": "2026-09-07", "barcode": "7896625210466", "name": ""}, {"expiry": "2026-09-07", "barcode": "7896625210473", "name": ""}, {"expiry": "2026-09-10", "barcode": "7896862002732", "name": ""}, {"expiry": "2026-09-10", "barcode": "7891025119524", "name": ""}, {"expiry": "2026-09-10", "barcode": "7891025110938", "name": ""}, {"expiry": "2026-09-12", "barcode": "7891097087431", "name": ""}, {"expiry": "2026-09-12", "barcode": "7898460935993", "name": ""}, {"expiry": "2026-09-12", "barcode": "7891000360668", "name": ""}, {"expiry": "2026-09-14", "barcode": "7891025106067", "name": ""}, {"expiry": "2026-09-15", "barcode": "7891025125495", "name": ""}, {"expiry": "2026-09-18", "barcode": "7891097087448", "name": ""}, {"expiry": "2026-09-18", "barcode": "7891000360323", "name": ""}, {"expiry": "2026-09-22", "barcode": "7891025125488", "name": ""}, {"expiry": "2026-09-23", "barcode": "7891000103931", "name": ""}, {"expiry": "2026-09-24", "barcode": "7891025121640", "name": ""}, {"expiry": "2026-09-25", "barcode": "7891000252833", "name": ""}, {"expiry": "2026-09-27", "barcode": "7891097087455", "name": ""}, {"expiry": "2026-09-29", "barcode": "7891000244265", "name": ""}];
-const DB_NAME='controleValidadesDB';
-const STORE='products';
-let db=null, showRemoved=false;
-
+const STORAGE_KEY='controleValidades_v3';
 const $=id=>document.getElementById(id);
-function uid(){return crypto.randomUUID?crypto.randomUUID():Math.random().toString(36).slice(2)+Date.now().toString(36)}
-function setState(t){$('saveState').textContent=t}
-function esc(s){return (s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
-function fmt(s){const [y,m,d]=s.split('-');return `${d}/${m}/${y}`}
-function days(s){const [y,m,d]=s.split('-').map(Number),t=new Date(y,m-1,d),n=new Date();t.setHours(0,0,0,0);n.setHours(0,0,0,0);return Math.round((t-n)/86400000)}
+let products=[];
+let showRemoved=false;
+let pendingName='';
+let pendingBarcode='';
 
+function uid(){return (crypto.randomUUID?crypto.randomUUID():Date.now()+'_'+Math.random().toString(36).slice(2))}
+function save(){localStorage.setItem(STORAGE_KEY,JSON.stringify(products));$('saveState').textContent='✅ Armazenamento pronto';}
+function load(){
+ try{products=JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]');if(!Array.isArray(products))products=[]}
+ catch(e){products=[]}
+ $('saveState').textContent='✅ Armazenamento pronto';
+}
+function esc(s){return (s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function fmt(s){if(!s)return'';const [y,m,d]=s.split('-');return `${d}/${m}/${y}`}
+function days(s){const [y,m,d]=s.split('-').map(Number),t=new Date(y,m-1,d),n=new Date();t.setHours(0,0,0,0);n.setHours(0,0,0,0);return Math.round((t-n)/86400000)}
 function inferCategory(name){
  const s=(name||'').toLowerCase();
  const bebidas=['refrigerante','suco','néctar','nectar','água','agua','cerveja','energético','energetico','chá','cha','isotônico','isotonico','refresco','bebida','guaraná','guarana','coca','pepsi','sprite','fanta'];
  const pereciveis=['iogurte','leite','queijo','requeijão','requeijao','manteiga','margarina','presunto','mortadela','salame','linguiça','linguica','salsicha','creme de leite','nata','coalhada','sobremesa','pudim','lácteo','lacteo','frutap','batavo','vigor','danone','yakult','carne','frango'];
- if(bebidas.some(k=>s.includes(k)))return 'Bebidas';
- if(pereciveis.some(k=>s.includes(k)))return 'Perecíveis';
- return 'Mercearia';
+ if(bebidas.some(k=>s.includes(k)))return'Bebidas';
+ if(pereciveis.some(k=>s.includes(k)))return'Perecíveis';
+ return'Mercearia';
 }
-function finalCategory(x){
- return x.category && x.category!=='auto' ? x.category : inferCategory(x.name||'');
-}
+function finalCategory(x){return x.category&&x.category!=='auto'?x.category:inferCategory(x.name||'')}
+function setScan(t){$('scanText').textContent=t;$('scanBox').classList.remove('hidden')}
+function clearPending(){pendingName='';pendingBarcode=''}
 
 
-function openDB(){
- return new Promise((resolve,reject)=>{
-   try{
-     const req=indexedDB.open('validadeDB_novo_20260813',1);
-     req.onupgradeneeded=()=>{
-       const db=req.result;
-       if(!db.objectStoreNames.contains('products')) db.createObjectStore('products',{keyPath:'id'});
-     };
-     req.onsuccess=()=>resolve(req.result);
-     req.onerror=()=>reject(req.error||new Error('Falha ao abrir armazenamento'));
-     req.onblocked=()=>reject(new Error('Armazenamento bloqueado. Feche outras abas do app e tente novamente.'));
-   }catch(e){reject(e)}
- });
-})};
-   req.onsuccess=e=>resolve(e.target.result);
-   req.onerror=e=>reject(e.target.error);
- });
-}
-function tx(mode='readonly'){return db.transaction(STORE,mode).objectStore(STORE)}
-function allProducts(){return new Promise((res,rej)=>{const r=tx().getAll();r.onsuccess=()=>res(r.result||[]);r.onerror=()=>rej(r.error)})}
-function putProduct(p){return new Promise((res,rej)=>{const r=tx('readwrite').put(p);r.onsuccess=()=>res();r.onerror=()=>rej(r.error)})}
-function deleteById(id){return new Promise((res,rej)=>{const r=tx('readwrite').delete(id);r.onsuccess=()=>res();r.onerror=()=>rej(r.error)})}
-function clearAll(){return new Promise((res,rej)=>{const r=tx('readwrite').clear();r.onsuccess=()=>res();r.onerror=()=>rej(r.error)})}
+function renderExpiryAlerts(){
+ const alertItems=products
+   .filter(x=>x.status!=='removed' && x.expiry)
+   .map(x=>({...x,daysLeft:days(x.expiry)}))
+   .filter(x=>x.daysLeft===5 || x.daysLeft===3 || x.daysLeft<=2)
+   .sort((a,b)=>a.daysLeft-b.daysLeft);
 
-async function seedIfNeeded(){
- const data=await allProducts();
- if(data.length)return;
- for(const x of STARTER) await putProduct({...x,id:uid(),category:'auto',status:'active'});
+ const box=$('expiryAlerts'), list=$('expiryAlertList');
+ if(!alertItems.length){
+   box.classList.add('hidden');
+   list.innerHTML='';
+   return;
+ }
+ box.classList.remove('hidden');
+
+ list.innerHTML=alertItems.map(x=>{
+   let msg='';
+   if(x.daysLeft<0) msg='VENCIDO — retirar imediatamente';
+   else if(x.daysLeft===0) msg='VENCE HOJE — retirar da venda';
+   else if(x.daysLeft===1) msg='Falta 1 dia — retirar/acompanhar';
+   else if(x.daysLeft===2) msg='Faltam 2 dias — retirar/acompanhar';
+   else if(x.daysLeft===3) msg='Faltam 3 dias para vencer';
+   else msg='Faltam 5 dias para vencer';
+
+   const urgent=x.daysLeft<=3?'urgent':'';
+   return `<div class="alertitem ${urgent}">
+     <b>${esc(x.name)||'Produto sem nome'}</b>
+     <span>${msg}</span><br>
+     <small>Código: ${esc(x.barcode)}${x.lot?` • Lote: ${esc(x.lot)}`:''} • Validade: ${fmt(x.expiry)} • Setor: ${finalCategory(x)}</small>
+   </div>`;
+ }).join('');
 }
-async function render(){
+
+function showStartupAlertOnce(){
+ const items=products.filter(x=>x.status!=='removed' && x.expiry)
+   .map(x=>({...x,daysLeft:days(x.expiry)}))
+   .filter(x=>x.daysLeft===5 || x.daysLeft===3 || x.daysLeft<=2);
+
+ if(!items.length)return;
+ const key='validade_alerta_'+new Date().toISOString().slice(0,10);
+ if(sessionStorage.getItem(key))return;
+
+ const urgent=items.filter(x=>x.daysLeft<=3).length;
+ const five=items.filter(x=>x.daysLeft===5).length;
+ let msg='⚠️ ALERTA DE VALIDADE\\n\\n';
+ if(urgent) msg+=`${urgent} produto(s) com 3 dias ou menos para vencer.\\n`;
+ if(five) msg+=`${five} produto(s) faltando 5 dias para vencer.\\n`;
+ msg+='\\nConfira a seção “Alertas de retirada” no aplicativo.';
+ alert(msg);
+ sessionStorage.setItem(key,'1');
+}
+
+function render(){
  const q=$('search').value.toLowerCase().trim();
- let d=await allProducts();
- const active=d.filter(x=>x.status!=='removed');
+ const active=products.filter(x=>x.status!=='removed');
  $('sTotal').textContent=active.length;
  $('sRed').textContent=active.filter(x=>days(x.expiry)>=0&&days(x.expiry)<=15).length;
  $('sOrange').textContent=active.filter(x=>days(x.expiry)>=16&&days(x.expiry)<=30).length;
  $('sGreen').textContent=active.filter(x=>days(x.expiry)>30).length;
-
- d=d.filter(x=>showRemoved?x.status==='removed':x.status!=='removed');
- if(q)d=d.filter(x=>(x.name||'').toLowerCase().includes(q)||(x.barcode||'').includes(q));
- d.sort((a,b)=>a.expiry.localeCompare(b.expiry));
-
+ let d=products.filter(x=>showRemoved?x.status==='removed':x.status!=='removed');
+ if(q)d=d.filter(x=>(x.name||'').toLowerCase().includes(q)||(x.barcode||'').includes(q)||(x.lot||'').toLowerCase().includes(q));
+ d.sort((a,b)=>(a.expiry||'').localeCompare(b.expiry||''));
  const sectors=['Perecíveis','Mercearia','Bebidas'];
- const htmlParts=[];
+ const out=[];
  for(const sector of sectors){
-   const items=d.filter(x=>finalCategory(x)===sector);
-   htmlParts.push(`<div class="sector-title" data-sector="${sector}">${sector.toUpperCase()}</div>`);
-   if(!items.length){
-     htmlParts.push(`<div class="sector-empty" data-sector-empty="${sector}">Nenhum produto neste setor.</div>`);
-     continue;
-   }
-   htmlParts.push(items.map(x=>{
-     const n=days(x.expiry),
-           cls=x.status==='removed'||n<0?'gray':n<=15?'red':n<=30?'orange':'green',
-           label=x.status==='removed'?'Retirado':n<0?'Vencido':n===0?'Vence hoje':`${n} dias`,
-           cat=finalCategory(x);
-     return `<div class="card ${cls}" data-sector-card="${cat}">
-       <div class="row">
-         <div>
-           <div class="name">${esc(x.name)||'Produto sem nome'}</div>
-           <div class="meta">Código: ${esc(x.barcode)}<br>Validade: ${fmt(x.expiry)}<br>Setor: ${cat}</div>
-           <div class="actions">
-             <button onclick="editItem('${x.id}')">Editar</button>
-             ${x.status!=='removed'?`<button onclick="removeItem('${x.id}')">Retirar</button>`:''}
-             <button onclick="eraseItem('${x.id}')">Excluir</button>
-           </div>
-         </div>
-         <span class="badge">${label}</span>
-       </div>
-     </div>`;
-   }).join(''));
+  const items=d.filter(x=>finalCategory(x)===sector);
+  if(!items.length)continue;
+  out.push(`<div class="sector-title" data-sector-title="${sector}">${sector.toUpperCase()}</div>`);
+  for(const x of items){
+   const n=days(x.expiry);
+   const cls=x.status==='removed'||n<0?'gray':n<=15?'red':n<=30?'orange':'green';
+   const label=x.status==='removed'?'Retirado':n<0?'Vencido':n===0?'Vence hoje':`${n} dias`;
+   out.push(`<div class="card ${cls}" data-sector-card="${sector}"><div class="row"><div>
+   <div class="name">${esc(x.name)||'Produto sem nome'}</div>
+   <div class="meta">Código: ${esc(x.barcode)}<br>${x.lot?`Lote: ${esc(x.lot)}<br>`:''}Validade: ${fmt(x.expiry)}<br>Setor: ${sector}</div>
+   <div class="actions">
+   <button onclick="editItem('${x.id}')">Editar</button>
+   ${x.status!=='removed'?`<button onclick="removeItem('${x.id}')">Retirar</button>`:''}
+   <button onclick="eraseItem('${x.id}')">Excluir</button>
+   </div></div><span class="badge">${label}</span></div></div>`);
+  }
  }
- $('list').innerHTML=htmlParts.join('');
+ $('list').innerHTML=out.join('')||'<div class="notice">Nenhum produto cadastrado nesta visualização.</div>';
+ renderExpiryAlerts();
 }
-function openForm(code='',prefillName=''){$('title').textContent='Cadastrar produto';$('editId').value='';$('name').value=prefillName;$('barcode').value=code;$('expiry').value='';$('category').value='auto';$('status').value='active';$('dlg').showModal()}
-async function editItem(id){const d=await allProducts(),x=d.find(p=>p.id===id);if(!x)return;$('title').textContent='Editar produto';$('editId').value=id;$('name').value=x.name||'';$('barcode').value=x.barcode||'';$('expiry').value=x.expiry||'';$('category').value=x.category||'auto';$('status').value=x.status||'active';$('dlg').showModal()}
-window.editItem=editItem;
-async function saveForm(){
- const id=$('editId').value,name=$('name').value.trim(),barcode=$('barcode').value.trim(),expiry=$('expiry').value,category=$('category').value,status=$('status').value;
- if(!barcode||!expiry){alert('Informe o código de barras e a validade.');return}
- const d=await allProducts(),dup=d.find(x=>x.barcode===barcode&&x.expiry===expiry&&x.id!==id);
- if(dup&&!id){alert('Esse mesmo produto com essa mesma validade já está cadastrado.');return}
- try{setState('Salvando…');await putProduct({id:id||uid(),name,barcode,expiry,category,status});setState('✅ Salvo neste aparelho');$('dlg').close();await render()}catch(e){setState('❌ Falha ao salvar');alert('Não consegui gravar os dados neste navegador.')} 
+
+function openForm(code='',name=''){
+ $('title').textContent='Cadastrar produto';$('editId').value='';$('name').value=name;$('barcode').value=code;$('lot').value='';$('expiry').value='';$('category').value='auto';$('status').value='active';$('dlg').showModal();
 }
-async function removeItem(id){const d=await allProducts(),x=d.find(p=>p.id===id);if(!x)return;x.status='removed';await putProduct(x);setState('✅ Salvo neste aparelho');render()}
-window.removeItem=removeItem;
-async function eraseItem(id){if(confirm('Excluir este produto?')){await deleteById(id);setState('✅ Alteração salva');render()}}
-window.eraseItem=eraseItem;
+function editItem(id){
+ const x=products.find(p=>p.id===id);if(!x)return;
+ $('title').textContent='Editar produto';$('editId').value=x.id;$('name').value=x.name||'';$('barcode').value=x.barcode||'';$('lot').value=x.lot||'';$('expiry').value=x.expiry||'';$('category').value=x.category||'auto';$('status').value=x.status||'active';$('dlg').showModal();
+}
+function removeItem(id){const x=products.find(p=>p.id===id);if(x){x.status='removed';save();render()}}
+function eraseItem(id){if(confirm('Excluir este produto?')){products=products.filter(p=>p.id!==id);save();render()}}
 
+$('btnSave').onclick=()=>{
+ const id=$('editId').value;
+ const name=$('name').value.trim(), barcode=$('barcode').value.trim(), lot=$('lot').value.trim(), expiry=$('expiry').value, category=$('category').value, status=$('status').value;
+ if(!barcode||!expiry){alert('Informe pelo menos o código de barras e a validade.');return}
+ const dup=products.find(x=>x.barcode===barcode&&x.expiry===expiry&&(x.lot||'')===lot&&x.id!==id);
+ if(dup){alert('Esse mesmo código, lote e validade já estão cadastrados.');return}
+ if(id){
+  const i=products.findIndex(x=>x.id===id);products[i]={...products[i],name,barcode,lot,expiry,category,status};
+ }else products.push({id:uid(),name,barcode,lot,expiry,category,status});
+ save();$('dlg').close();clearPending();render();
+};
+$('btnCancel').onclick=()=>{$('dlg').close()};
 
-async function decodeBarcode(file){
- if(!('BarcodeDetector' in window))return null;
+async function readBarcode(file){
+ if(!('BarcodeDetector' in window))return'';
  try{
-   const img=await createImageBitmap(file),
-         formats=await BarcodeDetector.getSupportedFormats(),
-         wanted=['ean_13','ean_8','code_128','upc_a','upc_e'].filter(f=>formats.includes(f)),
-         det=new BarcodeDetector({formats:wanted.length?wanted:formats}),
-         codes=await det.detect(img);
-   return codes[0]?.rawValue||null
- }catch(e){return null}
+  const formats=await BarcodeDetector.getSupportedFormats();
+  const wanted=['ean_13','ean_8','code_128','upc_a','upc_e'].filter(f=>formats.includes(f));
+  const detector=new BarcodeDetector({formats:wanted.length?wanted:formats});
+  const bitmap=await createImageBitmap(file);
+  const results=await detector.detect(bitmap);
+  return results[0]?.rawValue||'';
+ }catch(e){return''}
 }
 
-function setScanStatus(text,show=true){
- $('scanText').textContent=text;
- $('scanBox').classList.toggle('hidden',!show);
+async function ensureTesseract(){
+ if(window.Tesseract)return true;
+ setScan('Carregando leitor de texto...');
+ return new Promise(resolve=>{
+  const s=document.createElement('script');
+  s.src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
+  s.onload=()=>resolve(true);s.onerror=()=>resolve(false);document.head.appendChild(s);
+ });
 }
-
-function cleanOCRName(text){
+function cleanName(text){
  const bad=/^(validade|val|fab|fabricado|lote|ingredientes|informacao|informação|nutricional|sac|cont[eé]m|alerg|ministerio|ministério|brasil|inspecionado|produto|codigo|código|barra|peso|por[cç][aã]o|conservar|manter|industria|indústria|www\.|http|@)/i;
  const lines=(text||'').split(/\n+/).map(x=>x.replace(/[|*_~]/g,' ').replace(/\s+/g,' ').trim())
-   .filter(x=>x.length>=3 && x.length<=45)
-   .filter(x=>/[A-Za-zÀ-ÿ]/.test(x))
-   .filter(x=>!bad.test(x))
-   .filter(x=>!/\d{5,}/.test(x))
-   .filter(x=>(x.match(/[A-Za-zÀ-ÿ]/g)||[]).length>=3);
- if(!lines.length)return '';
- const scored=lines.map((x,i)=>{
-   let score=0;
-   const letters=(x.match(/[A-Za-zÀ-ÿ]/g)||[]).length;
-   const words=x.split(/\s+/).length;
-   score+=Math.min(letters,28);
-   if(words>=1&&words<=5)score+=12;
-   if(i<6)score+=10-i;
-   if(/[A-ZÀ-Ý]{3,}/.test(x))score+=4;
-   if(/[.:;]{2,}/.test(x))score-=8;
-   return {x,score};
- }).sort((a,b)=>b.score-a.score);
- return scored[0].x.replace(/^[^A-Za-zÀ-ÿ]+|[^A-Za-zÀ-ÿ0-9%+\- ]+$/g,'').trim();
+ .filter(x=>x.length>=3&&x.length<=45&&/[A-Za-zÀ-ÿ]/.test(x)&&!bad.test(x)&&!/\d{5,}/.test(x));
+ return lines[0]||'';
 }
-
-async function recognizeText(file){
- if(!window.Tesseract)return '';
- let worker=null;
+async function readName(file){
+ const ok=await ensureTesseract();if(!ok)return'';
  try{
-   setScanStatus('Lendo o nome do produto… na primeira vez pode levar alguns segundos.');
-   worker=await Tesseract.createWorker('por',1,{
-     logger:m=>{
-       if(m.status==='recognizing text' && typeof m.progress==='number'){
-         setScanStatus('Lendo o nome do produto… '+Math.round(m.progress*100)+'%');
-       }
-     }
-   });
-   const ret=await worker.recognize(file,{rotateAuto:true});
-   return ret?.data?.text||'';
- }catch(e){
-   console.warn('OCR falhou',e);
-   return '';
- }finally{
-   if(worker)try{await worker.terminate()}catch(e){}
- }
+  setScan('Lendo o nome do produto...');
+  const r=await Tesseract.recognize(file,'por',{logger:m=>{if(m.status==='recognizing text')setScan('Lendo o nome... '+Math.round((m.progress||0)*100)+'%')}});
+  return cleanName(r?.data?.text||'');
+ }catch(e){return''}
 }
 
 
-let pendingNamePhoto=null;
-
-async function processNamePhoto(file){
- setScanStatus('Lendo o nome do produto…');
- const text=await recognizeText(file);
- const productName=cleanOCRName(text);
- if(productName){
-   setScanStatus('✅ Nome encontrado: '+productName+'. Agora tire a foto do código.');
-   return productName;
+function cleanLot(text){
+ const raw=(text||'').replace(/\r/g,'\n');
+ const patterns=[
+   /(?:LOTE|LOT|L)\s*[:.\-]?\s*([A-Z0-9][A-Z0-9\-\/]{2,20})/i,
+   /(?:LOTE|LOT)\s+([A-Z0-9][A-Z0-9\-\/]{2,20})/i
+ ];
+ for(const p of patterns){
+   const m=raw.match(p);
+   if(m&&m[1])return m[1].trim().toUpperCase();
  }
- setScanStatus('Não consegui identificar o nome. Você poderá digitar manualmente depois.');
  return '';
 }
-
-async function processBarcodePhoto(file){
- setScanStatus('Lendo o código de barras…');
- const code=await decodeBarcode(file);
- if(code){
-   setScanStatus('✅ Código encontrado: '+code);
-   return code;
- }
- setScanStatus('Não consegui ler o código. Você poderá digitar manualmente.');
- return '';
+async function readLot(file){
+ const ok=await ensureTesseract();if(!ok)return'';
+ try{
+   setScan('Lendo o lote...');
+   const r=await Tesseract.recognize(file,'por',{logger:m=>{if(m.status==='recognizing text')setScan('Lendo o lote... '+Math.round((m.progress||0)*100)+'%')}});
+   return cleanLot(r?.data?.text||'');
+ }catch(e){return''}
 }
 
-
-let pendingNamePhoto='';
-let pendingBarcodePhoto='';
+$('btnNamePhoto').onclick=()=>$('namePhotoInput').click();
+$('btnBarcodePhoto').onclick=()=>$('barcodePhotoInput').click();
+$('btnReadNamePhoto').onclick=()=>$('editNamePhotoInput').click();
+$('btnReadLotPhoto').onclick=()=>$('lotPhotoInput').click();
 
 $('namePhotoInput').onchange=async e=>{
- const f=e.target.files[0];
- if(!f)return;
- try{
-   pendingNamePhoto=await processNamePhoto(f);
-   if(pendingNamePhoto){
-     setScanStatus('✅ Nome reconhecido. Agora você pode tirar a foto do código ou cadastrar manualmente.');
-   }
- }catch(err){
-   console.error(err);
-   pendingNamePhoto='';
-   setScanStatus('Não consegui analisar a foto do nome.');
- }
+ const f=e.target.files[0];if(!f)return;
+ pendingName=await readName(f);
+ setScan(pendingName?`✅ Nome reconhecido: ${pendingName}`:'⚠️ Não consegui reconhecer o nome. Você pode digitar manualmente.');
  e.target.value='';
 };
-
-
-
 $('barcodePhotoInput').onchange=async e=>{
- const f=e.target.files[0];
- if(!f)return;
- let code='';
- try{
-   code=await processBarcodePhoto(f);
- }catch(err){
-   console.error(err);
-   setScanStatus('Não consegui analisar a foto do código.');
- }
- pendingBarcodePhoto=code||'';
- const d=await allProducts();
- const known=code?d.find(p=>p.barcode===code && (p.name||'').trim()):null;
- const finalName=known?.name||pendingNamePhoto||'';
-
- if(code && finalName){
-   setScanStatus('✅ Nome e código disponíveis. Toque em Cadastrar para informar a validade.');
- }else if(code){
-   setScanStatus('✅ Código reconhecido. Você pode tirar a foto do nome ou tocar em Cadastrar.');
- }else if(finalName){
-   setScanStatus('Nome reconhecido. Você pode tentar novamente a foto do código ou tocar em Cadastrar.');
- }else{
-   setScanStatus('Não consegui reconhecer o código.');
- }
+ const f=e.target.files[0];if(!f)return;
+ setScan('Lendo o código de barras...');
+ pendingBarcode=await readBarcode(f);
+ setScan(pendingBarcode?`✅ Código reconhecido: ${pendingBarcode}`:'⚠️ Não consegui reconhecer o código. Você pode digitar manualmente.');
  e.target.value='';
 };
 
-
-
+$('lotPhotoInput').onchange=async e=>{
+ const f=e.target.files[0];if(!f)return;
+ const lot=await readLot(f);
+ if(lot){
+   $('lot').value=lot;
+   setScan(`✅ Lote reconhecido: ${lot}. Confira antes de salvar.`);
+ }else{
+   alert('Não consegui reconhecer o lote. Procure na embalagem por “LOTE”, “LOT” ou “L:” e tente uma foto mais próxima. Você também pode digitar manualmente.');
+ }
+ e.target.value='';
+};
 
 $('editNamePhotoInput').onchange=async e=>{
- const f=e.target.files[0];
- if(!f)return;
- try{
-   setScanStatus('Lendo somente o nome do produto…');
-   const text=await recognizeText(f);
-   const productName=cleanOCRName(text);
-   if(productName){
-     $('name').value=productName;
-     setScanStatus('✅ Nome reconhecido: '+productName+'. Confira e toque em Salvar.');
-   }else{
-     setScanStatus('Não consegui reconhecer o nome. Você pode digitar manualmente.');
-     alert('Não consegui reconhecer o nome nessa foto. Tente aproximar mais a embalagem e deixar o nome bem visível.');
-   }
- }catch(err){
-   console.error(err);
-   setScanStatus('Não consegui analisar a foto do nome.');
-   alert('Não consegui analisar essa foto.');
- }
+ const f=e.target.files[0];if(!f)return;
+ const n=await readName(f);
+ if(n){$('name').value=n;setScan(`✅ Nome reconhecido: ${n}. Confira e salve.`)}
+ else alert('Não consegui reconhecer o nome. Tente uma foto mais próxima e bem iluminada.');
  e.target.value='';
 };
 
-$('btnReadNamePhoto').onclick=()=>{
- $('editNamePhotoInput').click();
+$('btnAdd').onclick=()=>{openForm(pendingBarcode,pendingName)};
+$('search').oninput=render;
+$('btnRemoved').onclick=()=>{showRemoved=!showRemoved;$('btnRemoved').textContent=showRemoved?'⬅️ Voltar aos ativos':'📦 Retirados';render()};
+
+$('btnBackup').onclick=()=>{
+ const blob=new Blob([JSON.stringify(products,null,2)],{type:'application/json'});
+ const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='backup-validade.json';a.click();URL.revokeObjectURL(a.href);
+};
+$('btnRestore').onclick=()=>$('restoreInput').click();
+$('restoreInput').onchange=async e=>{
+ const f=e.target.files[0];if(!f)return;
+ try{
+  const data=JSON.parse(await f.text());
+  if(!Array.isArray(data))throw new Error();
+  if(confirm('Restaurar este backup e substituir os produtos atuais?')){products=data;save();render()}
+ }catch(err){alert('Arquivo de backup inválido.')}
+ e.target.value='';
 };
 
-
-function preparePrint(){
+$('btnPdf').onclick=()=>{
  const sector=$('reportSector').value;
- document.querySelectorAll('[data-sector], [data-sector-empty], [data-sector-card]').forEach(el=>el.classList.remove('hidden'));
+ document.querySelectorAll('[data-sector-title],[data-sector-card]').forEach(el=>el.classList.remove('hidden'));
  if(sector!=='all'){
-   document.querySelectorAll('[data-sector]').forEach(el=>{if(el.dataset.sector!==sector)el.classList.add('hidden')});
-   document.querySelectorAll('[data-sector-empty]').forEach(el=>{if(el.dataset.sectorEmpty!==sector)el.classList.add('hidden')});
-   document.querySelectorAll('[data-sector-card]').forEach(el=>{if(el.dataset.sectorCard!==sector)el.classList.add('hidden')});
+  document.querySelectorAll('[data-sector-title]').forEach(el=>{if(el.dataset.sectorTitle!==sector)el.classList.add('hidden')});
+  document.querySelectorAll('[data-sector-card]').forEach(el=>{if(el.dataset.sectorCard!==sector)el.classList.add('hidden')});
  }
  window.print();
- setTimeout(()=>document.querySelectorAll('[data-sector], [data-sector-empty], [data-sector-card]').forEach(el=>el.classList.remove('hidden')),500);
-}
+ setTimeout(()=>document.querySelectorAll('[data-sector-title],[data-sector-card]').forEach(el=>el.classList.remove('hidden')),500);
+};
 
-$('btnAdd').onclick=()=>{openForm(pendingBarcodePhoto||'',pendingNamePhoto||'');pendingNamePhoto='';pendingBarcodePhoto='';};$('btnNamePhoto').onclick=()=>{$('namePhotoInput').click()};$('btnBarcodePhoto').onclick=()=>{$('barcodePhotoInput').click()};$('btnPdf').onclick=preparePrint;$('btnRemoved').onclick=()=>{showRemoved=!showRemoved;render()};$('btnBackup').onclick=backup;$('btnRestore').onclick=()=>$('restoreInput').click();$('btnSave').onclick=saveForm;$('btnCancel').onclick=()=>$('dlg').close();$('search').oninput=render;
-
-(async()=>{
- try{db=await openDB();await seedIfNeeded();setState('✅ Armazenamento pronto');await render();if('serviceWorker' in navigator && location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js').catch(()=>{})}catch(e){setState('❌ Abra pelo Chrome em um link online');alert('Esta versão precisa ser aberta no Chrome em um endereço online para salvar com segurança.')} 
-})();
+load();
+render();
+setTimeout(showStartupAlertOnce,300);
 </script>
 </body>
 </html>
