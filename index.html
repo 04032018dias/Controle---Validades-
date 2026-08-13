@@ -16,9 +16,9 @@ button{border:0;border-radius:12px;padding:12px;font-weight:750;background:white
 .search{width:100%;padding:12px;border:1px solid #ccd3dd;border-radius:10px;margin-bottom:12px;font-size:16px}.card{border-radius:14px;padding:12px;margin-bottom:10px;box-shadow:0 1px 5px #0001}.red{background:var(--red)}.orange{background:var(--orange)}.green{background:var(--green)}.gray{background:var(--gray)}
 .row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center}.name{font-weight:800}.meta{font-size:13px;margin-top:3px}.badge{font-size:12px;font-weight:800;padding:6px 8px;background:#fff8;border-radius:999px;white-space:nowrap}.actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}.actions button{padding:8px 9px;font-size:12px}
 dialog{border:0;border-radius:16px;width:calc(100% - 24px);max-width:520px;padding:0}dialog::backdrop{background:#0008}.modal{padding:16px}label{display:block;font-size:13px;font-weight:750;margin:11px 0 5px}input,select{width:100%;padding:11px;border:1px solid #cbd5e1;border-radius:10px;font-size:16px}
-.notice{background:#fff7d6;padding:10px;border-radius:10px;font-size:13px;margin:10px 0}.hidden{display:none!important}#saveState{font-size:12px;margin-top:5px;opacity:.9}
+.notice{background:#fff7d6;padding:10px;border-radius:10px;font-size:13px;margin:10px 0}.hidden{display:none!important}#saveState{font-size:12px;margin-top:5px;opacity:.9}.sector-title{font-size:22px;font-weight:900;margin:22px 0 10px;padding:10px 12px;border-radius:12px;background:#17324d;color:#fff;letter-spacing:.3px}.sector-empty{font-size:13px;color:var(--muted);margin:0 0 12px}.scanbox{background:#eef5ff;border:1px solid #c7daf5;border-radius:12px;padding:10px;margin-bottom:12px;font-size:13px}.scanbox b{display:block;margin-bottom:3px}
 @media(min-width:700px){.toolbar{grid-template-columns:repeat(6,1fr)}}
-@media print{*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important}header,.toolbar,.search,.actions,dialog{display:none!important}body{background:#fff!important}main{max-width:none;padding:0}.card,.stat{box-shadow:none;border:1px solid #bbb;break-inside:avoid}.card.red{background:#ffe1e1!important}.card.orange{background:#fff0cc!important}.card.green{background:#e4f4e6!important}.card.gray{background:#e7e7e7!important}}
+@media print{*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important}header,.toolbar,.search,.actions,dialog{display:none!important}body{background:#fff!important}main{max-width:none;padding:0}.card,.stat{box-shadow:none;border:1px solid #bbb;break-inside:avoid}.sector-title{background:#17324d!important;color:#fff!important;break-after:avoid}.card.red{background:#ffe1e1!important}.card.orange{background:#fff0cc!important}.card.green{background:#e4f4e6!important}.card.gray{background:#e7e7e7!important}}
 </style>
 </head>
 <body>
@@ -26,16 +26,19 @@ dialog{border:0;border-radius:16px;width:calc(100% - 24px);max-width:520px;paddi
 <main>
 <div class="toolbar">
 <button class="primary" id="btnAdd">➕ Cadastrar</button>
-<button id="btnPhoto">📸 Foto do código</button>
+<button id="btnPhoto">📸 Usar 2 fotos</button>
 <button id="btnPdf">📄 Gerar PDF</button>
+<select id="reportSector" style="grid-column:span 2"><option value="all">PDF: Todos os setores</option><option value="Perecíveis">PDF: Perecíveis</option><option value="Mercearia">PDF: Mercearia</option><option value="Bebidas">PDF: Bebidas</option></select>
 <button id="btnRemoved">📦 Retirados</button>
 <button id="btnBackup">💾 Backup</button>
 <button id="btnRestore">📥 Restaurar</button>
 </div>
-<input id="photoInput" class="hidden" type="file" accept="image/*" capture="environment">
+<input id="namePhotoInput" class="hidden" type="file" accept="image/*" capture="environment">
+<input id="barcodePhotoInput" class="hidden" type="file" accept="image/*" capture="environment">
+<input id="editNamePhotoInput" class="hidden" type="file" accept="image/*" capture="environment">
 <input id="restoreInput" class="hidden" type="file" accept="application/json,.json">
 <div class="stats"><div class="stat"><b id="sTotal">0</b><span class="small">Ativos</span></div><div class="stat"><b id="sRed">0</b><span class="small">Até 15 dias</span></div><div class="stat"><b id="sOrange">0</b><span class="small">16 a 30 dias</span></div><div class="stat"><b id="sGreen">0</b><span class="small">Acima de 30 dias</span></div></div>
-<input id="search" class="search" placeholder="Buscar produto ou código...">
+<div id="scanBox" class="scanbox hidden"><b>📷 Cadastro por 2 fotos</b><span id="scanText">Primeiro fotografe o nome; depois o código de barras.</span></div><input id="search" class="search" placeholder="Buscar produto ou código...">
 <div id="list"></div>
 </main>
 
@@ -43,13 +46,16 @@ dialog{border:0;border-radius:16px;width:calc(100% - 24px);max-width:520px;paddi
 <h2 id="title">Cadastrar produto</h2>
 <input id="editId" type="hidden">
 <label>Nome do produto</label><input id="name" placeholder="Ex.: Iogurte morango">
+<button type="button" id="btnReadNamePhoto" style="margin-top:8px;width:100%">📸 Ler nome pela foto</button>
 <label>Código de barras</label><input id="barcode" inputmode="numeric" placeholder="789...">
 <label>Data de validade</label><input id="expiry" type="date">
+<label>Categoria / setor</label><select id="category"><option value="auto">Automático pelo nome</option><option value="Perecíveis">Perecíveis</option><option value="Mercearia">Mercearia</option><option value="Bebidas">Bebidas</option></select>
 <label>Status</label><select id="status"><option value="active">Ativo</option><option value="removed">Retirado</option></select>
-<div class="notice">Nesta versão os dados são gravados no banco interno do navegador (IndexedDB), que é mais confiável que o salvamento usado antes.</div>
+<div class="notice">Você pode tirar 2 fotos para novos produtos. Nos produtos já cadastrados, abra Editar e use “📸 Ler nome pela foto” para atualizar somente o nome. O app também classifica automaticamente em Perecíveis, Mercearia ou Bebidas, e você pode corrigir a categoria manualmente.</div>
 <div class="actions"><button class="primary" id="btnSave">Salvar</button><button id="btnCancel">Cancelar</button></div>
 </div></dialog>
 
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <script>
 const STARTER=[{"expiry": "2026-08-18", "barcode": "7896691101002", "name": ""}, {"expiry": "2026-08-23", "barcode": "7891025109907", "name": ""}, {"expiry": "2026-08-28", "barcode": "7896862002060", "name": ""}, {"expiry": "2026-08-29", "barcode": "7898460935979", "name": ""}, {"expiry": "2026-08-31", "barcode": "7896625212514", "name": ""}, {"expiry": "2026-09-01", "barcode": "7891000110430", "name": ""}, {"expiry": "2026-09-05", "barcode": "7896691101535", "name": ""}, {"expiry": "2026-09-05", "barcode": "7891000261026", "name": ""}, {"expiry": "2026-09-07", "barcode": "7891097089527", "name": ""}, {"expiry": "2026-09-07", "barcode": "7896625210466", "name": ""}, {"expiry": "2026-09-07", "barcode": "7896625210473", "name": ""}, {"expiry": "2026-09-10", "barcode": "7896862002732", "name": ""}, {"expiry": "2026-09-10", "barcode": "7891025119524", "name": ""}, {"expiry": "2026-09-10", "barcode": "7891025110938", "name": ""}, {"expiry": "2026-09-12", "barcode": "7891097087431", "name": ""}, {"expiry": "2026-09-12", "barcode": "7898460935993", "name": ""}, {"expiry": "2026-09-12", "barcode": "7891000360668", "name": ""}, {"expiry": "2026-09-14", "barcode": "7891025106067", "name": ""}, {"expiry": "2026-09-15", "barcode": "7891025125495", "name": ""}, {"expiry": "2026-09-18", "barcode": "7891097087448", "name": ""}, {"expiry": "2026-09-18", "barcode": "7891000360323", "name": ""}, {"expiry": "2026-09-22", "barcode": "7891025125488", "name": ""}, {"expiry": "2026-09-23", "barcode": "7891000103931", "name": ""}, {"expiry": "2026-09-24", "barcode": "7891025121640", "name": ""}, {"expiry": "2026-09-25", "barcode": "7891000252833", "name": ""}, {"expiry": "2026-09-27", "barcode": "7891097087455", "name": ""}, {"expiry": "2026-09-29", "barcode": "7891000244265", "name": ""}];
 const DB_NAME='controleValidadesDB';
@@ -62,6 +68,19 @@ function setState(t){$('saveState').textContent=t}
 function esc(s){return (s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 function fmt(s){const [y,m,d]=s.split('-');return `${d}/${m}/${y}`}
 function days(s){const [y,m,d]=s.split('-').map(Number),t=new Date(y,m-1,d),n=new Date();t.setHours(0,0,0,0);n.setHours(0,0,0,0);return Math.round((t-n)/86400000)}
+
+function inferCategory(name){
+ const s=(name||'').toLowerCase();
+ const bebidas=['refrigerante','suco','néctar','nectar','água','agua','cerveja','energético','energetico','chá','cha','isotônico','isotonico','refresco','bebida','guaraná','guarana','coca','pepsi','sprite','fanta'];
+ const pereciveis=['iogurte','leite','queijo','requeijão','requeijao','manteiga','margarina','presunto','mortadela','salame','linguiça','linguica','salsicha','creme de leite','nata','coalhada','sobremesa','pudim','lácteo','lacteo','frutap','batavo','vigor','danone','yakult','carne','frango'];
+ if(bebidas.some(k=>s.includes(k)))return 'Bebidas';
+ if(pereciveis.some(k=>s.includes(k)))return 'Perecíveis';
+ return 'Mercearia';
+}
+function finalCategory(x){
+ return x.category && x.category!=='auto' ? x.category : inferCategory(x.name||'');
+}
+
 
 function openDB(){
  return new Promise((resolve,reject)=>{
@@ -80,45 +99,245 @@ function clearAll(){return new Promise((res,rej)=>{const r=tx('readwrite').clear
 async function seedIfNeeded(){
  const data=await allProducts();
  if(data.length)return;
- for(const x of STARTER) await putProduct({...x,id:uid(),status:'active'});
+ for(const x of STARTER) await putProduct({...x,id:uid(),category:'auto',status:'active'});
 }
 async function render(){
  const q=$('search').value.toLowerCase().trim();
  let d=await allProducts();
  const active=d.filter(x=>x.status!=='removed');
- $('sTotal').textContent=active.length;$('sRed').textContent=active.filter(x=>days(x.expiry)>=0&&days(x.expiry)<=15).length;$('sOrange').textContent=active.filter(x=>days(x.expiry)>=16&&days(x.expiry)<=30).length;$('sGreen').textContent=active.filter(x=>days(x.expiry)>30).length;
+ $('sTotal').textContent=active.length;
+ $('sRed').textContent=active.filter(x=>days(x.expiry)>=0&&days(x.expiry)<=15).length;
+ $('sOrange').textContent=active.filter(x=>days(x.expiry)>=16&&days(x.expiry)<=30).length;
+ $('sGreen').textContent=active.filter(x=>days(x.expiry)>30).length;
+
  d=d.filter(x=>showRemoved?x.status==='removed':x.status!=='removed');
  if(q)d=d.filter(x=>(x.name||'').toLowerCase().includes(q)||(x.barcode||'').includes(q));
  d.sort((a,b)=>a.expiry.localeCompare(b.expiry));
- $('list').innerHTML=d.length?d.map(x=>{const n=days(x.expiry),cls=x.status==='removed'||n<0?'gray':n<=15?'red':n<=30?'orange':'green';const label=x.status==='removed'?'Retirado':n<0?'Vencido':n===0?'Vence hoje':`${n} dias`;return `<div class="card ${cls}"><div class="row"><div><div class="name">${esc(x.name)||'Produto sem nome'}</div><div class="meta">Código: ${esc(x.barcode)}<br>Validade: ${fmt(x.expiry)}</div><div class="actions"><button onclick="editItem('${x.id}')">Editar</button>${x.status!=='removed'?`<button onclick="removeItem('${x.id}')">Retirar</button>`:''}<button onclick="eraseItem('${x.id}')">Excluir</button></div></div><span class="badge">${label}</span></div></div>`}).join(''):'<div class="notice">Nenhum produto encontrado.</div>';
+
+ const sectors=['Perecíveis','Mercearia','Bebidas'];
+ const htmlParts=[];
+ for(const sector of sectors){
+   const items=d.filter(x=>finalCategory(x)===sector);
+   htmlParts.push(`<div class="sector-title" data-sector="${sector}">${sector.toUpperCase()}</div>`);
+   if(!items.length){
+     htmlParts.push(`<div class="sector-empty" data-sector-empty="${sector}">Nenhum produto neste setor.</div>`);
+     continue;
+   }
+   htmlParts.push(items.map(x=>{
+     const n=days(x.expiry),
+           cls=x.status==='removed'||n<0?'gray':n<=15?'red':n<=30?'orange':'green',
+           label=x.status==='removed'?'Retirado':n<0?'Vencido':n===0?'Vence hoje':`${n} dias`,
+           cat=finalCategory(x);
+     return `<div class="card ${cls}" data-sector-card="${cat}">
+       <div class="row">
+         <div>
+           <div class="name">${esc(x.name)||'Produto sem nome'}</div>
+           <div class="meta">Código: ${esc(x.barcode)}<br>Validade: ${fmt(x.expiry)}<br>Setor: ${cat}</div>
+           <div class="actions">
+             <button onclick="editItem('${x.id}')">Editar</button>
+             ${x.status!=='removed'?`<button onclick="removeItem('${x.id}')">Retirar</button>`:''}
+             <button onclick="eraseItem('${x.id}')">Excluir</button>
+           </div>
+         </div>
+         <span class="badge">${label}</span>
+       </div>
+     </div>`;
+   }).join(''));
+ }
+ $('list').innerHTML=htmlParts.join('');
 }
-function openForm(code=''){$('title').textContent='Cadastrar produto';$('editId').value='';$('name').value='';$('barcode').value=code;$('expiry').value='';$('status').value='active';$('dlg').showModal()}
-async function editItem(id){const d=await allProducts(),x=d.find(p=>p.id===id);if(!x)return;$('title').textContent='Editar produto';$('editId').value=id;$('name').value=x.name||'';$('barcode').value=x.barcode||'';$('expiry').value=x.expiry||'';$('status').value=x.status||'active';$('dlg').showModal()}
+function openForm(code='',prefillName=''){$('title').textContent='Cadastrar produto';$('editId').value='';$('name').value=prefillName;$('barcode').value=code;$('expiry').value='';$('category').value='auto';$('status').value='active';$('dlg').showModal()}
+async function editItem(id){const d=await allProducts(),x=d.find(p=>p.id===id);if(!x)return;$('title').textContent='Editar produto';$('editId').value=id;$('name').value=x.name||'';$('barcode').value=x.barcode||'';$('expiry').value=x.expiry||'';$('category').value=x.category||'auto';$('status').value=x.status||'active';$('dlg').showModal()}
 window.editItem=editItem;
 async function saveForm(){
- const id=$('editId').value,name=$('name').value.trim(),barcode=$('barcode').value.trim(),expiry=$('expiry').value,status=$('status').value;
+ const id=$('editId').value,name=$('name').value.trim(),barcode=$('barcode').value.trim(),expiry=$('expiry').value,category=$('category').value,status=$('status').value;
  if(!barcode||!expiry){alert('Informe o código de barras e a validade.');return}
- const d=await allProducts(),dup=d.find(x=>x.barcode===barcode&&x.id!==id);
- if(dup&&!id){alert('Esse código já está cadastrado. Vou abrir o cadastro existente.');$('dlg').close();editItem(dup.id);return}
- try{setState('Salvando…');await putProduct({id:id||uid(),name,barcode,expiry,status});setState('✅ Salvo neste aparelho');$('dlg').close();await render()}catch(e){setState('❌ Falha ao salvar');alert('Não consegui gravar os dados neste navegador.')} 
+ const d=await allProducts(),dup=d.find(x=>x.barcode===barcode&&x.expiry===expiry&&x.id!==id);
+ if(dup&&!id){alert('Esse mesmo produto com essa mesma validade já está cadastrado.');return}
+ try{setState('Salvando…');await putProduct({id:id||uid(),name,barcode,expiry,category,status});setState('✅ Salvo neste aparelho');$('dlg').close();await render()}catch(e){setState('❌ Falha ao salvar');alert('Não consegui gravar os dados neste navegador.')} 
 }
 async function removeItem(id){const d=await allProducts(),x=d.find(p=>p.id===id);if(!x)return;x.status='removed';await putProduct(x);setState('✅ Salvo neste aparelho');render()}
 window.removeItem=removeItem;
 async function eraseItem(id){if(confirm('Excluir este produto?')){await deleteById(id);setState('✅ Alteração salva');render()}}
 window.eraseItem=eraseItem;
 
+
 async function decodeBarcode(file){
  if(!('BarcodeDetector' in window))return null;
- try{const img=await createImageBitmap(file),formats=await BarcodeDetector.getSupportedFormats(),wanted=['ean_13','ean_8','code_128','upc_a','upc_e'].filter(f=>formats.includes(f)),det=new BarcodeDetector({formats:wanted.length?wanted:formats}),codes=await det.detect(img);return codes[0]?.rawValue||null}catch(e){return null}
+ try{
+   const img=await createImageBitmap(file),
+         formats=await BarcodeDetector.getSupportedFormats(),
+         wanted=['ean_13','ean_8','code_128','upc_a','upc_e'].filter(f=>formats.includes(f)),
+         det=new BarcodeDetector({formats:wanted.length?wanted:formats}),
+         codes=await det.detect(img);
+   return codes[0]?.rawValue||null
+ }catch(e){return null}
 }
-$('photoInput').onchange=async e=>{const f=e.target.files[0];if(!f)return;const code=await decodeBarcode(f);if(code){const d=await allProducts(),x=d.find(p=>p.barcode===code);x?editItem(x.id):openForm(code)}else{alert('Não consegui ler o código. Digite o número manualmente.');openForm()}e.target.value=''};
 
-async function backup(){
- const data=await allProducts(),blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='backup-controle-validades.json';a.click();URL.revokeObjectURL(a.href)
+function setScanStatus(text,show=true){
+ $('scanText').textContent=text;
+ $('scanBox').classList.toggle('hidden',!show);
 }
-$('restoreInput').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=async()=>{try{const data=JSON.parse(r.result);await clearAll();for(const x of data)await putProduct(x);setState('✅ Backup restaurado');render()}catch{alert('Backup inválido.')}};r.readAsText(f);e.target.value=''};
 
-$('btnAdd').onclick=()=>openForm();$('btnPhoto').onclick=()=>$('photoInput').click();$('btnPdf').onclick=()=>window.print();$('btnRemoved').onclick=()=>{showRemoved=!showRemoved;render()};$('btnBackup').onclick=backup;$('btnRestore').onclick=()=>$('restoreInput').click();$('btnSave').onclick=saveForm;$('btnCancel').onclick=()=>$('dlg').close();$('search').oninput=render;
+function cleanOCRName(text){
+ const bad=/^(validade|val|fab|fabricado|lote|ingredientes|informacao|informação|nutricional|sac|cont[eé]m|alerg|ministerio|ministério|brasil|inspecionado|produto|codigo|código|barra|peso|por[cç][aã]o|conservar|manter|industria|indústria|www\.|http|@)/i;
+ const lines=(text||'').split(/\n+/).map(x=>x.replace(/[|*_~]/g,' ').replace(/\s+/g,' ').trim())
+   .filter(x=>x.length>=3 && x.length<=45)
+   .filter(x=>/[A-Za-zÀ-ÿ]/.test(x))
+   .filter(x=>!bad.test(x))
+   .filter(x=>!/\d{5,}/.test(x))
+   .filter(x=>(x.match(/[A-Za-zÀ-ÿ]/g)||[]).length>=3);
+ if(!lines.length)return '';
+ const scored=lines.map((x,i)=>{
+   let score=0;
+   const letters=(x.match(/[A-Za-zÀ-ÿ]/g)||[]).length;
+   const words=x.split(/\s+/).length;
+   score+=Math.min(letters,28);
+   if(words>=1&&words<=5)score+=12;
+   if(i<6)score+=10-i;
+   if(/[A-ZÀ-Ý]{3,}/.test(x))score+=4;
+   if(/[.:;]{2,}/.test(x))score-=8;
+   return {x,score};
+ }).sort((a,b)=>b.score-a.score);
+ return scored[0].x.replace(/^[^A-Za-zÀ-ÿ]+|[^A-Za-zÀ-ÿ0-9%+\- ]+$/g,'').trim();
+}
+
+async function recognizeText(file){
+ if(!window.Tesseract)return '';
+ let worker=null;
+ try{
+   setScanStatus('Lendo o nome do produto… na primeira vez pode levar alguns segundos.');
+   worker=await Tesseract.createWorker('por',1,{
+     logger:m=>{
+       if(m.status==='recognizing text' && typeof m.progress==='number'){
+         setScanStatus('Lendo o nome do produto… '+Math.round(m.progress*100)+'%');
+       }
+     }
+   });
+   const ret=await worker.recognize(file,{rotateAuto:true});
+   return ret?.data?.text||'';
+ }catch(e){
+   console.warn('OCR falhou',e);
+   return '';
+ }finally{
+   if(worker)try{await worker.terminate()}catch(e){}
+ }
+}
+
+
+let pendingNamePhoto=null;
+
+async function processNamePhoto(file){
+ setScanStatus('Lendo o nome do produto…');
+ const text=await recognizeText(file);
+ const productName=cleanOCRName(text);
+ if(productName){
+   setScanStatus('✅ Nome encontrado: '+productName+'. Agora tire a foto do código.');
+   return productName;
+ }
+ setScanStatus('Não consegui identificar o nome. Você poderá digitar manualmente depois.');
+ return '';
+}
+
+async function processBarcodePhoto(file){
+ setScanStatus('Lendo o código de barras…');
+ const code=await decodeBarcode(file);
+ if(code){
+   setScanStatus('✅ Código encontrado: '+code);
+   return code;
+ }
+ setScanStatus('Não consegui ler o código. Você poderá digitar manualmente.');
+ return '';
+}
+
+$('namePhotoInput').onchange=async e=>{
+ const f=e.target.files[0];
+ if(!f)return;
+ try{
+   pendingNamePhoto=await processNamePhoto(f);
+ }catch(err){
+   console.error(err);
+   pendingNamePhoto='';
+   setScanStatus('Não consegui analisar a foto do nome.');
+ }
+ e.target.value='';
+ // Depois da foto do nome, abre automaticamente a câmera para o código.
+ setTimeout(()=>$('barcodePhotoInput').click(),350);
+};
+
+$('barcodePhotoInput').onchange=async e=>{
+ const f=e.target.files[0];
+ if(!f)return;
+ let code='';
+ try{
+   code=await processBarcodePhoto(f);
+ }catch(err){
+   console.error(err);
+   setScanStatus('Não consegui analisar a foto do código.');
+ }
+ const d=await allProducts();
+ const known=code?d.find(p=>p.barcode===code && (p.name||'').trim()):null;
+ const finalName=known?.name||pendingNamePhoto||'';
+
+ if(code && finalName){
+   setScanStatus('✅ Nome e código preenchidos. Agora informe a validade.');
+   openForm(code,finalName);
+ }else if(code){
+   setScanStatus('✅ Código preenchido. Informe o nome e a validade.');
+   openForm(code,'');
+ }else if(finalName){
+   setScanStatus('Nome preenchido. Digite o código e informe a validade.');
+   openForm('',finalName);
+ }else{
+   setScanStatus('Preencha os dados manualmente.');
+   openForm();
+ }
+ pendingNamePhoto=null;
+ e.target.value='';
+};
+
+
+
+$('editNamePhotoInput').onchange=async e=>{
+ const f=e.target.files[0];
+ if(!f)return;
+ try{
+   setScanStatus('Lendo somente o nome do produto…');
+   const text=await recognizeText(f);
+   const productName=cleanOCRName(text);
+   if(productName){
+     $('name').value=productName;
+     setScanStatus('✅ Nome reconhecido: '+productName+'. Confira e toque em Salvar.');
+   }else{
+     setScanStatus('Não consegui reconhecer o nome. Você pode digitar manualmente.');
+     alert('Não consegui reconhecer o nome nessa foto. Tente aproximar mais a embalagem e deixar o nome bem visível.');
+   }
+ }catch(err){
+   console.error(err);
+   setScanStatus('Não consegui analisar a foto do nome.');
+   alert('Não consegui analisar essa foto.');
+ }
+ e.target.value='';
+};
+
+$('btnReadNamePhoto').onclick=()=>{
+ $('editNamePhotoInput').click();
+};
+
+
+function preparePrint(){
+ const sector=$('reportSector').value;
+ document.querySelectorAll('[data-sector], [data-sector-empty], [data-sector-card]').forEach(el=>el.classList.remove('hidden'));
+ if(sector!=='all'){
+   document.querySelectorAll('[data-sector]').forEach(el=>{if(el.dataset.sector!==sector)el.classList.add('hidden')});
+   document.querySelectorAll('[data-sector-empty]').forEach(el=>{if(el.dataset.sectorEmpty!==sector)el.classList.add('hidden')});
+   document.querySelectorAll('[data-sector-card]').forEach(el=>{if(el.dataset.sectorCard!==sector)el.classList.add('hidden')});
+ }
+ window.print();
+ setTimeout(()=>document.querySelectorAll('[data-sector], [data-sector-empty], [data-sector-card]').forEach(el=>el.classList.remove('hidden')),500);
+}
+
+$('btnAdd').onclick=()=>openForm();$('btnPhoto').onclick=()=>{$('namePhotoInput').click()};$('btnPdf').onclick=preparePrint;$('btnRemoved').onclick=()=>{showRemoved=!showRemoved;render()};$('btnBackup').onclick=backup;$('btnRestore').onclick=()=>$('restoreInput').click();$('btnSave').onclick=saveForm;$('btnCancel').onclick=()=>$('dlg').close();$('search').oninput=render;
 
 (async()=>{
  try{db=await openDB();await seedIfNeeded();setState('✅ Armazenamento pronto');await render();if('serviceWorker' in navigator && location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js').catch(()=>{})}catch(e){setState('❌ Abra pelo Chrome em um link online');alert('Esta versão precisa ser aberta no Chrome em um endereço online para salvar com segurança.')} 
