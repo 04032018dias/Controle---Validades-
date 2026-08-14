@@ -44,7 +44,7 @@ body{background:white!important}main{max-width:none;padding:0}.card{box-shadow:n
 </header>
 
 <main>
-<div class="small" style="margin-bottom:6px"><b>Relatório:</b> escolha o setor e a data em que a validade foi realizada.</div>
+<div class="small" style="margin-bottom:6px"><b>Relatório:</b> escolha o setor, a cor dos vencimentos e a data em que a validade foi realizada.</div>
 <div class="toolbar">
 <button class="primary" id="btnAdd">➕ Cadastrar</button>
 <button id="btnNamePhoto">📸 Foto do nome</button>
@@ -56,6 +56,13 @@ body{background:white!important}main{max-width:none;padding:0}.card{box-shadow:n
 <option value="Perecíveis">PDF: Perecíveis</option>
 <option value="Mercearia">PDF: Mercearia</option>
 <option value="Bebidas">PDF: Bebidas</option>
+</select>
+<select id="reportColor">
+  <option value="all">PDF: Todas as cores</option>
+  <option value="red_orange">PDF: Vermelho + Laranja</option>
+  <option value="red">PDF: Somente Vermelho</option>
+  <option value="orange">PDF: Somente Laranja</option>
+  <option value="green">PDF: Somente Verde</option>
 </select>
 <input id="reportDate" type="date" title="Data do relatório">
 <button id="btnRemoved">📦 Retirados</button>
@@ -173,6 +180,23 @@ function inferCategory(name){
  return'Mercearia';
 }
 function finalCategory(x){return x.category&&x.category!=='auto'?x.category:inferCategory(x.name||'')}
+
+function colorBucket(x){
+ const n=days(x.expiry);
+ if(n<=15)return 'red';
+ if(n<=30)return 'orange';
+ return 'green';
+}
+function colorLabel(v){
+ return {
+   all:'Todas as cores',
+   red_orange:'Vermelho + Laranja',
+   red:'Somente Vermelho',
+   orange:'Somente Laranja',
+   green:'Somente Verde'
+ }[v]||'Todas as cores';
+}
+
 function setScan(t){$('scanText').textContent=t;$('scanBox').classList.remove('hidden')}
 function clearPending(){pendingName='';pendingBarcode=''}
 
@@ -558,10 +582,17 @@ $('restoreInput').onchange=async e=>{
 function reportItems(){
  const date=$('reportDate').value||todayISO();
  const sector=$('reportSector').value;
+ const color=$('reportColor').value||'all';
  return products
    .filter(x=>x.status!=='removed')
    .filter(x=>(x.createdAt||todayISO())===date)
    .filter(x=>sector==='all'||finalCategory(x)===sector)
+   .filter(x=>{
+      const c=colorBucket(x);
+      if(color==='all')return true;
+      if(color==='red_orange')return c==='red'||c==='orange';
+      return c===color;
+   })
    .sort((a,b)=>(a.expiry||'').localeCompare(b.expiry||''));
 }
 
@@ -570,11 +601,12 @@ function openPrintReport(){
  const sector=$('reportSector').value;
  const items=reportItems();
  if(!items.length){
-   alert('Não há validades cadastradas para essa data e setor.');
+   alert('Não há validades cadastradas para essa data, setor e filtro de cor.');
    return;
  }
  const title=`Validades feitas no dia ${reportTitleDate(date)}`;
  const sectorLabel=sector==='all'?'Todos os setores':sector;
+ const colorLabelText=colorLabel($('reportColor').value||'all');
  const groups=['Perecíveis','Mercearia','Bebidas'];
 
  const body=groups.map(g=>{
@@ -602,7 +634,7 @@ function openPrintReport(){
  h2{font-size:18px;background:#17324d;color:white;padding:8px 10px;border-radius:8px}
  .r{border:1px solid #bbb;border-radius:8px;padding:10px;margin:8px 0;break-inside:avoid;line-height:1.45}
  @media print{*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}}
- </style></head><body><h1>${title}</h1><p>${sectorLabel} • ${items.length} produto(s)</p>${body}
+ </style></head><body><h1>${title}</h1><p>${sectorLabel} • ${colorLabelText} • ${items.length} produto(s)</p>${body}
  <script>setTimeout(()=>window.print(),250)<\/script></body></html>`);
  w.document.close();
 }
@@ -629,11 +661,12 @@ async function buildPdfFile(){
  const sector=$('reportSector').value;
  const title=`Validades feitas no dia ${reportTitleDate(date)}`;
  const sectorLabel=sector==='all'?'Todos os setores':sector;
+ const colorLabelText=colorLabel($('reportColor').value||'all');
 
  let y=16;
  doc.setFont('helvetica','bold');doc.setFontSize(16);doc.text(title,14,y);
  y+=7;doc.setFont('helvetica','normal');doc.setFontSize(10);
- doc.text(`${sectorLabel} - ${items.length} produto(s)`,14,y);y+=8;
+ doc.text(`${sectorLabel} - ${colorLabelText} - ${items.length} produto(s)`,14,y);y+=8;
 
  const groups=['Perecíveis','Mercearia','Bebidas'];
  for(const g of groups){
@@ -691,7 +724,7 @@ $('btnSharePdf').onclick=async()=>{
    }
  }catch(e){
    if(e?.name==='AbortError')return;
-   if(e?.message==='EMPTY') alert('Não há validades cadastradas para essa data e setor.');
+   if(e?.message==='EMPTY') alert('Não há validades cadastradas para essa data, setor e filtro de cor.');
    else if(e?.message==='PDFLIB') alert('Não consegui carregar o gerador de PDF. Verifique sua internet e tente novamente.');
    else {console.error(e);alert('Não consegui gerar o PDF para compartilhamento.');}
  }
