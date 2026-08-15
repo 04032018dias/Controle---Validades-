@@ -44,7 +44,7 @@ body{background:white!important}main{max-width:none;padding:0}.card{box-shadow:n
 </header>
 
 <main>
-<div class="small" style="margin-bottom:6px"><b>Relatório:</b> escolha o setor, a cor dos vencimentos e a data em que a validade foi realizada.</div>
+<div class="small" style="margin-bottom:6px"><b>Relatório:</b> escolha um ou vários dias de cadastro, o setor e as cores que deseja enviar.</div>
 <div class="toolbar">
 <button class="primary" id="btnAdd">➕ Cadastrar</button>
 <button id="btnNamePhoto">📸 Foto do nome</button>
@@ -64,7 +64,9 @@ body{background:white!important}main{max-width:none;padding:0}.card{box-shadow:n
   <option value="orange">PDF: Somente Laranja</option>
   <option value="green">PDF: Somente Verde</option>
 </select>
-<input id="reportDate" type="date" title="Data do relatório">
+<button type="button" id="btnChooseDates">📅 Selecionar dias</button>
+<div id="selectedDatesLabel" class="small" style="grid-column:span 2;padding:6px 2px">Hoje</div>
+<button id="btnSendAlert">⚠️ Enviar alerta</button>
 <button id="btnRemoved">📦 Retirados</button>
 <button id="btnBackup">💾 Backup</button>
 <button id="btnRestore">📥 Restaurar</button>
@@ -83,20 +85,35 @@ body{background:white!important}main{max-width:none;padding:0}.card{box-shadow:n
 </div>
 
 <div id="expiryAlerts" class="alertbox hidden">
-  <h3>⚠️ Alertas de retirada</h3>
+  <h3>⚠️ Alertas de retirada</h3><div class="small" style="margin-bottom:6px">Use “Enviar alerta” para mandar esta lista pelo WhatsApp.</div>
   <div id="expiryAlertList"></div>
 </div>
 
-<div id="scanBox" class="scanbox hidden"><b>📷 Leitura por foto</b><span id="scanText"></span><div class="actions" style="margin-top:8px"><button id="btnUseScan" class="hidden">✅ Usar dados e cadastrar</button><button id="btnClearScan" class="hidden">🗑️ Limpar leitura</button></div></div>
+<div id="scanBox" class="scanbox hidden"><b>📷 Leitura por foto</b><span id="scanText"></span><div class="small" style="margin-top:5px">💡 Depois que um código é salvo com o nome correto, o app reaproveita esse nome automaticamente nas próximas vezes.</div><div class="actions" style="margin-top:8px"><button id="btnUseScan" class="hidden">✅ Usar dados e cadastrar</button><button id="btnClearScan" class="hidden">🗑️ Limpar leitura</button></div></div>
 <input id="search" class="search" placeholder="Buscar produto ou código...">
 <div id="list"></div>
 </main>
 
 
+
+<dialog id="datesDlg">
+<div class="modal">
+<h2>Selecionar dias do relatório</h2>
+<p class="small">Marque um ou mais dias em que os produtos foram adicionados/bipados.</p>
+<div id="datesChecklist" style="display:grid;gap:8px;max-height:55vh;overflow:auto;margin:12px 0"></div>
+<div class="actions">
+<button type="button" id="btnDatesToday">Hoje</button>
+<button type="button" id="btnDatesAll">Todos</button>
+<button type="button" id="btnDatesClear">Limpar</button>
+<button type="button" class="primary" id="btnDatesApply">Aplicar</button>
+<button type="button" id="btnDatesCancel">Cancelar</button>
+</div>
+</div>
+</dialog>
 <dialog id="scanConfirmDlg">
 <form method="dialog" id="scanConfirmForm">
 <h2>Conferir produto reconhecido</h2>
-<p class="muted">Confira os dados antes de continuar. Você pode corrigir o nome ou o código.</p>
+<p class="muted">Confira os dados antes de continuar. Se você corrigir o nome uma vez, o app memoriza esse nome para esse código nas próximas leituras.</p>
 <label>Nome do produto</label>
 <input id="scanConfirmName" placeholder="Ex.: Predilecta - Molho de Tomate Tradicional">
 <label>Código de barras</label>
@@ -139,11 +156,62 @@ body{background:white!important}main{max-width:none;padding:0}.card{box-shadow:n
 
 <script>
 const STORAGE_KEY='controleValidades_v3';
+
+const PRODUCT_MAP_KEY='controleValidades_productMap_v1';
+
+function loadProductMap(){
+ try{return JSON.parse(localStorage.getItem(PRODUCT_MAP_KEY)||'{}')||{}}
+ catch(e){return {}}
+}
+function saveProductMap(map){
+ try{localStorage.setItem(PRODUCT_MAP_KEY,JSON.stringify(map))}catch(e){}
+}
+function rememberProductName(barcode,name){
+ if(!barcode||!name)return;
+ const map=loadProductMap();
+ map[String(barcode).trim()]=String(name).trim();
+ saveProductMap(map);
+}
+function knownNameFromMap(barcode){
+ if(!barcode)return '';
+ const map=loadProductMap();
+ return map[String(barcode).trim()]||'';
+}
+
 const $=id=>document.getElementById(id);
 let products=[];
 let showRemoved=false;
 let pendingName='';
 let pendingBarcode='';
+
+let selectedReportDates=[];
+function selectedDatesOrToday(){
+ if(selectedReportDates.length)return [...selectedReportDates].sort();
+ return [todayISO()];
+}
+function updateSelectedDatesLabel(){
+ const dates=selectedDatesOrToday();
+ $('selectedDatesLabel').textContent='Dias selecionados: '+dates.map(fmt).join(', ');
+}
+function availableReportDates(){
+ return [...new Set(products.map(x=>x.createdAt).filter(Boolean))].sort().reverse();
+}
+function renderDatesChecklist(){
+ const available=availableReportDates();
+ const current=new Set(selectedDatesOrToday());
+ const box=$('datesChecklist');
+ if(!available.length){
+   box.innerHTML='<div class="notice">Ainda não há datas de cadastro disponíveis.</div>';
+   return;
+ }
+ box.innerHTML=available.map(d=>`
+   <label style="display:flex;align-items:center;gap:10px;margin:0;padding:10px;border:1px solid #ddd;border-radius:10px;background:white">
+     <input type="checkbox" class="reportDateCheck" value="${d}" ${current.has(d)?'checked':''} style="width:auto">
+     <span><b>${fmt(d)}</b><br><small>${products.filter(x=>x.createdAt===d).length} produto(s) adicionados</small></span>
+   </label>
+ `).join('');
+}
+
 
 function uid(){return (crypto.randomUUID?crypto.randomUUID():Date.now()+'_'+Math.random().toString(36).slice(2))}
 function save(){localStorage.setItem(STORAGE_KEY,JSON.stringify(products));$('saveState').textContent='✅ Armazenamento pronto';}
@@ -187,6 +255,15 @@ function colorBucket(x){
  if(n<=30)return 'orange';
  return 'green';
 }
+
+function expiryDaysLabel(expiry){
+ const n=days(expiry);
+ if(n<0)return `Vencido há ${Math.abs(n)} dia${Math.abs(n)===1?'':'s'}`;
+ if(n===0)return 'Vence hoje';
+ if(n===1)return 'Falta 1 dia';
+ return `Faltam ${n} dias`;
+}
+
 function colorLabel(v){
  return {
    all:'Todas as cores',
@@ -202,6 +279,8 @@ function clearPending(){pendingName='';pendingBarcode=''}
 
 function findNameByBarcode(code){
  if(!code)return '';
+ const fromMap=knownNameFromMap(code);
+ if(fromMap)return fromMap;
  const found=products.find(p=>p.barcode===code && (p.name||'').trim());
  return found?.name||'';
 }
@@ -272,6 +351,50 @@ function renderExpiryAlerts(){
      <small>Código: ${esc(x.barcode)}${x.lot?` • Lote: ${esc(x.lot)}`:''} • Validade: ${fmt(x.expiry)} • Setor: ${finalCategory(x)}</small>
    </div>`;
  }).join('');
+}
+
+
+function alertItemsForShare(){
+ return products
+   .filter(x=>x.status!=='removed' && x.expiry)
+   .map(x=>({...x,daysLeft:days(x.expiry)}))
+   .filter(x=>x.daysLeft===5 || x.daysLeft===3 || x.daysLeft<=2)
+   .sort((a,b)=>a.daysLeft-b.daysLeft);
+}
+function alertMessageForWhatsApp(){
+ const items=alertItemsForShare();
+ if(!items.length)return '';
+ const today=fmt(todayISO());
+ const lines=[
+   `⚠️ ALERTA DE VALIDADES - ${today}`,
+   '',
+   'Produtos próximos do vencimento:'
+ ];
+ for(const x of items){
+   let status='';
+   if(x.daysLeft<0)status=`VENCIDO há ${Math.abs(x.daysLeft)} dia${Math.abs(x.daysLeft)===1?'':'s'}`;
+   else if(x.daysLeft===0)status='VENCE HOJE';
+   else if(x.daysLeft===1)status='Falta 1 dia';
+   else status=`Faltam ${x.daysLeft} dias`;
+   lines.push('');
+   lines.push(`• ${x.name||'Produto sem nome'}`);
+   lines.push(`  Código: ${x.barcode||''}`);
+   if(x.lot)lines.push(`  Lote: ${x.lot}`);
+   lines.push(`  Validade: ${fmt(x.expiry)} - ${status}`);
+   lines.push(`  Setor: ${finalCategory(x)}`);
+ }
+ lines.push('');
+ lines.push('Favor verificar retirada/ação necessária.');
+ return lines.join('\n');
+}
+function sendAlertWhatsApp(){
+ const msg=alertMessageForWhatsApp();
+ if(!msg){
+   alert('Não há produtos em alerta de 5 dias, 3 dias ou menos.');
+   return;
+ }
+ const url='https://wa.me/?text='+encodeURIComponent(msg);
+ window.open(url,'_blank');
 }
 
 function showStartupAlertOnce(){
@@ -347,7 +470,7 @@ $('btnSave').onclick=()=>{
  if(id){
   const i=products.findIndex(x=>x.id===id);products[i]={...products[i],name,barcode,lot,expiry,category,createdAt,status};
  }else products.push({id:uid(),name,barcode,lot,expiry,category,status,createdAt});
- save();$('dlg').close();clearPending();render();
+ rememberProductName(barcode,name);save();$('dlg').close();clearPending();render();
 };
 $('btnCancel').onclick=()=>{$('dlg').close()};
 
@@ -444,12 +567,41 @@ async function preprocessForOCR(file){
 async function readName(file){
  const ok=await ensureTesseract();if(!ok)return'';
  try{
-   setScan('Melhorando a foto do nome...');
+   setScan('Analisando o nome do produto...');
    const processed=await preprocessForOCR(file).catch(()=>file);
-   setScan('Lendo o nome do produto...');
-   const r=await Tesseract.recognize(processed||file,'por',{logger:m=>{if(m.status==='recognizing text')setScan('Lendo o nome... '+Math.round((m.progress||0)*100)+'%')}});
-   return cleanName(r?.data?.text||'');
- }catch(e){return''}
+
+   const run=async(input,label)=>{
+     const r=await Tesseract.recognize(input,'por',{
+       logger:m=>{
+         if(m.status==='recognizing text'){
+           setScan(`${label} ${Math.round((m.progress||0)*100)}%`);
+         }
+       }
+     });
+     return r?.data?.text||'';
+   };
+
+   const t1=await run(file,'Lendo foto original...');
+   const n1=cleanName(t1);
+
+   const t2=await run(processed||file,'Confirmando nome...');
+   const n2=cleanName(t2);
+
+   function nameScore(n){
+     if(!n)return -999;
+     let s=0;
+     if(n.length>=4&&n.length<=45)s+=5;
+     if(/\b(molho|tomate|iogurte|leite|queijo|bebida|biscoito|arroz|feij[aã]o|macarr[aã]o|suco|refrigerante|tradicional|morango|baunilha|coco|zero|integral)\b/i.test(n))s+=6;
+     if(/\d{5,}/.test(n))s-=8;
+     if((n.match(/[A-Za-zÀ-ÿ]/g)||[]).length/Math.max(1,n.length)>.6)s+=3;
+     return s;
+   }
+
+   return nameScore(n2)>=nameScore(n1)?n2:n1;
+ }catch(e){
+   console.error(e);
+   return'';
+ }
 }
 
 
@@ -483,32 +635,44 @@ $('btnReadLotPhoto').onclick=()=>$('lotPhotoInput').click();
 $('namePhotoInput').onchange=async e=>{
  const f=e.target.files[0];if(!f)return;
  pendingName=await readName(f);
+
  if(pendingName){
-   setScan(`✅ Nome reconhecido: ${pendingName}. Agora fotografe o código ou toque em “Usar dados e cadastrar”.`);
+   setScan(`✅ Nome reconhecido: ${pendingName}.`);
+   if(pendingBarcode){
+     updateScanActions();
+     setTimeout(showScanConfirmation,180);
+   }else{
+     setScan(`✅ Nome reconhecido: ${pendingName}. Agora fotografe o código de barras.`);
+     updateScanActions();
+   }
  }else{
-   setScan('⚠️ Não consegui identificar o nome com segurança. Você pode tirar outra foto ou cadastrar e digitar o nome manualmente.');
+   setScan('⚠️ Não consegui identificar o nome com segurança. Tente outra foto mais próxima da frente da embalagem.');
+   updateScanActions();
  }
- updateScanActions();
- maybeOpenCadastro();
  e.target.value='';
 };
 $('barcodePhotoInput').onchange=async e=>{
  const f=e.target.files[0];if(!f)return;
  setScan('Lendo o código de barras...');
  pendingBarcode=await readBarcode(f);
+
  if(pendingBarcode){
    const known=findNameByBarcode(pendingBarcode);
+
    if(known){
      pendingName=known;
-     setScan(`✅ Código reconhecido: ${pendingBarcode}. Produto já conhecido: ${known}.`);
+     setScan(`✅ Código reconhecido: ${pendingBarcode}. Nome preenchido automaticamente: ${known}.`);
+     updateScanActions();
+     setTimeout(showScanConfirmation,180);
    }else{
-     setScan(`✅ Código reconhecido: ${pendingBarcode}. Agora fotografe o nome ou toque em “Usar dados e cadastrar”.`);
+     setScan(`✅ Código reconhecido: ${pendingBarcode}. Agora fotografe o nome do produto.`);
+     updateScanActions();
+     if(pendingName) setTimeout(showScanConfirmation,180);
    }
  }else{
-   setScan('⚠️ Não consegui ler o código. Tente de novo com o código reto, inteiro e bem iluminado, ou digite manualmente no cadastro.');
+   setScan('⚠️ Não consegui ler o código. Tente outra foto com as barras retas, inteiras e sem reflexo.');
+   updateScanActions();
  }
- updateScanActions();
- maybeOpenCadastro();
  e.target.value='';
 };
 
@@ -561,6 +725,7 @@ $('btnAdd').onclick=()=>{openForm(pendingBarcode,pendingName)};
 
 
 $('search').oninput=render;
+$('btnSendAlert').onclick=sendAlertWhatsApp;
 $('btnRemoved').onclick=()=>{showRemoved=!showRemoved;$('btnRemoved').textContent=showRemoved?'⬅️ Voltar aos ativos':'📦 Retirados';render()};
 
 $('btnBackup').onclick=()=>{
@@ -580,12 +745,12 @@ $('restoreInput').onchange=async e=>{
 
 
 function reportItems(){
- const date=$('reportDate').value||todayISO();
+ const dates=selectedDatesOrToday();
  const sector=$('reportSector').value;
  const color=$('reportColor').value||'all';
  return products
    .filter(x=>x.status!=='removed')
-   .filter(x=>(x.createdAt||todayISO())===date)
+   .filter(x=>dates.includes(x.createdAt||todayISO()))
    .filter(x=>sector==='all'||finalCategory(x)===sector)
    .filter(x=>{
       const c=colorBucket(x);
@@ -593,36 +758,49 @@ function reportItems(){
       if(color==='red_orange')return c==='red'||c==='orange';
       return c===color;
    })
-   .sort((a,b)=>(a.expiry||'').localeCompare(b.expiry||''));
+   .sort((a,b)=>{
+      const da=(a.createdAt||'')+(a.expiry||'');
+      const db=(b.createdAt||'')+(b.expiry||'');
+      return da.localeCompare(db);
+   });
 }
 
 function openPrintReport(){
- const date=$('reportDate').value||todayISO();
+ const dates=selectedDatesOrToday();
+ const dateLabel=dates.map(fmt).join(', ');
  const sector=$('reportSector').value;
  const items=reportItems();
  if(!items.length){
    alert('Não há validades cadastradas para essa data, setor e filtro de cor.');
    return;
  }
- const title=`Validades feitas no dia ${reportTitleDate(date)}`;
+ const title=dates.length===1?`Validades feitas no dia ${dateLabel}`:`Validades feitas nos dias ${dateLabel}`;
  const sectorLabel=sector==='all'?'Todos os setores':sector;
  const colorLabelText=colorLabel($('reportColor').value||'all');
  const groups=['Perecíveis','Mercearia','Bebidas'];
 
- const body=groups.map(g=>{
-   const arr=items.filter(x=>finalCategory(x)===g);
-   if(!arr.length)return '';
-   return `<h2>${g}</h2>`+arr.map(x=>{
-     const n=days(x.expiry);
-     const bg=n<=15?'#ffe1e1':n<=30?'#fff0cc':'#e4f4e6';
-     return `<div class="r" style="background:${bg}">
-       <b>${esc(x.name)||'Produto sem nome'}</b><br>
-       Código: ${esc(x.barcode)}<br>
-       ${x.lot?`Lote: ${esc(x.lot)}<br>`:''}
-       Validade: ${fmt(x.expiry)}<br>
-       Lançado em: ${fmt(x.createdAt||date)}
-     </div>`;
+ const body=dates.map(d=>{
+   const dayItems=items.filter(x=>(x.createdAt||todayISO())===d);
+   if(!dayItems.length)return '';
+   const dayHeader=`<h1 style="font-size:18px;margin-top:24px;border-bottom:2px solid #17324d;padding-bottom:5px">ADICIONADOS EM ${fmt(d)}</h1>`;
+   const sectorsHtml=groups.map(g=>{
+     const arr=dayItems.filter(x=>finalCategory(x)===g);
+     if(!arr.length)return '';
+     return `<h2>${g}</h2>`+arr.map(x=>{
+       const n=days(x.expiry);
+       const bg=n<=15?'#ffe1e1':n<=30?'#fff0cc':'#e4f4e6';
+       return `<div class="r" style="background:${bg}">
+         <b>${esc(x.name)||'Produto sem nome'}</b><br>
+         Código: ${esc(x.barcode)}<br>
+         ${x.lot?`Lote: ${esc(x.lot)}<br>`:''}
+         Validade: ${fmt(x.expiry)}<br>
+         <b>${expiryDaysLabel(x.expiry)}</b><br>
+         Adicionado em: ${fmt(x.createdAt||d)}
+       </div>`;
+     }).join('');
    }).join('');
+   return dayHeader+sectorsHtml;
+ }).join('');
  }).join('');
 
  const w=window.open('','_blank');
@@ -657,9 +835,10 @@ async function buildPdfFile(){
  if(!ok) throw new Error('PDFLIB');
  const {jsPDF}=window.jspdf;
  const doc=new jsPDF({unit:'mm',format:'a4'});
- const date=$('reportDate').value||todayISO();
+ const dates=selectedDatesOrToday();
+ const dateLabel=dates.map(fmt).join(', ');
  const sector=$('reportSector').value;
- const title=`Validades feitas no dia ${reportTitleDate(date)}`;
+ const title=dates.length===1?`Validades feitas no dia ${dateLabel}`:`Validades feitas nos dias ${dateLabel}`;
  const sectorLabel=sector==='all'?'Todos os setores':sector;
  const colorLabelText=colorLabel($('reportColor').value||'all');
 
@@ -669,6 +848,7 @@ async function buildPdfFile(){
  doc.text(`${sectorLabel} - ${colorLabelText} - ${items.length} produto(s)`,14,y);y+=8;
 
  const groups=['Perecíveis','Mercearia','Bebidas'];
+ let lastAddedDate='';
  for(const g of groups){
    const arr=items.filter(x=>finalCategory(x)===g);
    if(!arr.length)continue;
@@ -683,7 +863,7 @@ async function buildPdfFile(){
      if(n<=15)doc.setFillColor(255,225,225);
      else if(n<=30)doc.setFillColor(255,240,204);
      else doc.setFillColor(228,244,230);
-     const h=x.lot?29:24;
+     const h=x.lot?34:29;
      doc.roundedRect(14,y-4,182,h,2,2,'F');
      doc.setFont('helvetica','bold');doc.setFontSize(11);
      doc.text((x.name||'Produto sem nome').slice(0,70),18,y+2);
@@ -692,24 +872,47 @@ async function buildPdfFile(){
      doc.text(`Código: ${x.barcode||''}`,18,yy); yy+=5;
      if(x.lot){doc.text(`Lote: ${x.lot}`,18,yy);yy+=5}
      doc.text(`Validade: ${fmt(x.expiry)}`,18,yy);yy+=5;
-     doc.text(`Validade realizada em: ${fmt(x.createdAt||date)}`,18,yy);
+     doc.setFont('helvetica','bold');
+     doc.text(expiryDaysLabel(x.expiry),18,yy);yy+=5;
+     doc.setFont('helvetica','normal');
+     doc.text(`Adicionado em: ${fmt(x.createdAt||dates[0])}`,18,yy);
      y+=h+4;
    }
  }
  const blob=doc.output('blob');
- const filename=`validades_${date.replaceAll('-','_')}.pdf`;
+ const filename=`validades_${dates.join('_').replaceAll('-','_')}.pdf`;
  return new File([blob],filename,{type:'application/pdf'});
 }
+
+
+$('btnChooseDates').onclick=()=>{
+ renderDatesChecklist();
+ $('datesDlg').showModal();
+};
+$('btnDatesToday').onclick=()=>{
+ document.querySelectorAll('.reportDateCheck').forEach(c=>c.checked=(c.value===todayISO()));
+};
+$('btnDatesAll').onclick=()=>document.querySelectorAll('.reportDateCheck').forEach(c=>c.checked=true);
+$('btnDatesClear').onclick=()=>document.querySelectorAll('.reportDateCheck').forEach(c=>c.checked=false);
+$('btnDatesApply').onclick=()=>{
+ selectedReportDates=[...document.querySelectorAll('.reportDateCheck:checked')].map(c=>c.value).sort();
+ if(!selectedReportDates.length) selectedReportDates=[todayISO()];
+ updateSelectedDatesLabel();
+ $('datesDlg').close();
+};
+$('btnDatesCancel').onclick=()=>$('datesDlg').close();
 
 $('btnPdf').onclick=openPrintReport;
 
 $('btnSharePdf').onclick=async()=>{
  try{
    const file=await buildPdfFile();
-   const date=$('reportDate').value||todayISO();
+   const dates=selectedDatesOrToday();
+   const dateLabel=dates.map(fmt).join(', ');
+   const shareTitle=dates.length===1?`Validades feitas no dia ${dateLabel}`:`Validades feitas nos dias ${dateLabel}`;
    const shareData={
-     title:`Validades feitas no dia ${reportTitleDate(date)}`,
-     text:`Segue o relatório de validades feitas no dia ${reportTitleDate(date)}.`,
+     title:shareTitle,
+     text:`Segue o relatório: ${shareTitle}.`,
      files:[file]
    };
    if(navigator.canShare && navigator.canShare({files:[file]}) && navigator.share){
@@ -731,8 +934,9 @@ $('btnSharePdf').onclick=async()=>{
 };
 
 
-$('reportDate').value=todayISO();
 load();
+selectedReportDates=[todayISO()];
+updateSelectedDatesLabel();
 render();
 setTimeout(showStartupAlertOnce,300);
 </script>
